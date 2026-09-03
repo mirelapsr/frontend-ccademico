@@ -1,0 +1,132 @@
+
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.layout__sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--marinho);
+  color: #f4efe6;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 0;
+}
+
+.layout__marca {
+  padding: 0 24px 24px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(244, 239, 230, 0.15);
+}
+
+.layout__marca-eyebrow {
+  margin: 0 0 4px;
+  font-family: var(--fonte-corpo);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(244, 239, 230, 0.65);
+}
+
+.layout__marca-titulo {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #f4efe6;
+}
+
+.layout__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layout__link {
+  display: block;
+  padding: 12px 24px;
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(244, 239, 230, 0.75);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.layout__link:hover {
+  background: rgba(244, 239, 230, 0.07);
+  color: #f4efe6;
+}
+
+.layout__link--ativo {
+  background: rgba(244, 239, 230, 0.09);
+  color: #f4efe6;
+  border-left-color: var(--vinho);
+}
+
+.layout__link:focus-visible {
+  outline: 2px solid #f4efe6;
+  outline-offset: -2px;
+}
+
+.layout__conteudo {
+  flex: 1;
+  min-width: 0;
+  background: var(--fundo);
+  padding: 32px;
+}
+
+.layout__conteudo-interno {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .layout__sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 16px;
+  }
+
+  .layout__marca {
+    padding: 0;
+    margin-bottom: 0;
+    border-bottom: none;
+  }
+
+  .layout__marca-titulo {
+    font-size: 1.05rem;
+  }
+
+  .layout__menu {
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+  }
+
+  .layout__link {
+    padding: 8px 12px;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+  }
+
+  .layout__link--ativo {
+    border-left-color: transparent;
+    border-bottom-color: var(--vinho);
+  }
+
+  .layout__conteudo {
+    padding: 20px 16px;
+  }
+}

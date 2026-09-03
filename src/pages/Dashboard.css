@@ -1,0 +1,135 @@
+.dashboard {
+  background: var(--fundo);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard__cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard__cabecalho h1 {
+  font-size: 1.6rem;
+}
+
+.dashboard__data {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* --- Linha de KPIs ----------------------------------------------------- */
+
+.dashboard__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.card-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(32, 28, 22, 0.06),
+    0 2px 8px rgba(32, 28, 22, 0.07);
+  padding: 18px 20px;
+  min-width: 0;
+}
+
+.card-kpi__rotulo {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+
+.card-kpi__valor {
+  font-family: var(--fonte-titulo);
+  font-size: 1.9rem;
+  color: var(--marinho);
+  line-height: 1.15;
+}
+
+.card-kpi__descricao {
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+/* --- Área de gráficos ---------------------------------------------------
+   2/3 + 1/3 em telas largas; `min-width: 0` nos itens do grid é o que evita
+   o SVG do recharts forçar rolagem horizontal quando o card encolhe. */
+
+.dashboard__graficos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.dashboard__grafico {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(32, 28, 22, 0.06),
+    0 2px 8px rgba(32, 28, 22, 0.07);
+  padding: 20px 24px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Reforça a proporção 2/3 + 1/3 por classe (não só pela ordem no grid). */
+.dashboard__grafico--principal {
+  grid-column: span 2;
+}
+
+.dashboard__grafico--secundario {
+  grid-column: span 1;
+}
+
+.dashboard__grafico h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.dashboard__grafico-vazio {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--texto-suave);
+  font-style: italic;
+}
+
+@media (max-width: 1024px) {
+  .dashboard__kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard__graficos {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard__cabecalho {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard__kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard__grafico {
+    padding: 16px;
+  }
+}
