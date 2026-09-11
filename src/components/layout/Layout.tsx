@@ -7,6 +7,10 @@ const ITENS_MENU = [
   { rota: "/alunos", rotulo: "Alunos" },
   { rota: "/turmas", rotulo: "Turmas" },
   { rota: "/matriculas", rotulo: "Matrículas" },
+  { rota: "/professores", rotulo: "Professores" },
+  { rota: "/materias", rotulo: "Matérias" },
+  { rota: "/periodos", rotulo: "Períodos" },
+  { rota: "/responsaveis", rotulo: "Responsáveis" },
 ];
 
 function Layout() {

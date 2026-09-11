@@ -98,3 +98,92 @@ export interface Matricula {
 
 export type MatriculaEntrada = Omit<Matricula, "idMatricula" | "criadoEm" | "atualizadoEm">;
 
+/**
+ * Professor — pertence a uma Escola (`escolaIdEscola`), assim como Turma.
+ */
+export type SituacaoProfessor = "Ativo" | "Inativo";
+
+export interface Professor {
+  idProfessor: number;
+  nomeProf: string;
+  cpfProf: string | null;
+  telefoneProf: string | null;
+  emailProf: string | null;
+  cepProf: string | null;
+  enderecoProf: string | null;
+  situacao: SituacaoProfessor;
+  /** FK — id da Escola a que este professor está vinculado. */
+  escolaIdEscola: number;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export type ProfessorEntrada = Omit<Professor, "idProfessor" | "criadoEm" | "atualizadoEm">;
+
+/**
+ * Matéria — catálogo simples de disciplinas, sem vínculo com outra entidade
+ * neste módulo (a associação com Turma/Professor fica para uma fase futura).
+ */
+export interface Materia {
+  idMateria: number;
+  nomeMateria: string;
+  cargaHoraria?: number | null;
+}
+
+export type MateriaEntrada = Omit<Materia, "idMateria">;
+
+/**
+ * Período letivo — bimestre/semestre de um ano letivo. Entidade independente,
+ * sem vínculo direto com outras (referenciada por nome/ano quando necessário).
+ */
+export type SituacaoPeriodo = "Ativo" | "Encerrado";
+
+export interface Periodo {
+  idPeriodo: number;
+  ano: number;
+  nomePeriodo: string;
+  /** Data ISO (ex.: "2026-02-02"). */
+  dataInicio: string;
+  /** Data ISO (ex.: "2026-04-10"). */
+  dataFim: string;
+  situacao: SituacaoPeriodo;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export type PeriodoEntrada = Omit<Periodo, "idPeriodo" | "criadoEm" | "atualizadoEm">;
+
+/**
+ * Responsável — contato de um responsável legal. Entidade independente
+ * neste módulo (o vínculo com Aluno fica para uma fase futura).
+ */
+export interface Responsavel {
+  idResponsavel: number;
+  nomeResp: string;
+  cpfResp: string | null;
+  telefoneResp: string | null;
+  emailResp: string | null;
+  cepResp: string | null;
+  enderecoResp: string | null;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export type ResponsavelEntrada = Omit<Responsavel, "idResponsavel" | "criadoEm" | "atualizadoEm">;
+
+/**
+ * AlunoResponsavel — junção Aluno×Responsável, espelhando a tabela
+ * `alunoresponsavel` (PK composta, sem idAluno/idResponsavel próprios).
+ * `responsavelFinanceiro` é único por aluno — regra reforçada tanto aqui
+ * (client-side, em `PaginaResponsaveis`/`PaginaAlunos`) quanto pelo trigger
+ * `func_ar_financeiro_unico_ins/upd` no banco.
+ */
+export type TipoResponsavel = "Pai" | "Mae" | "ResponsavelLegal" | "Outro";
+
+export interface AlunoResponsavel {
+  alunoIdAluno: number;
+  responsavelIdResponsavel: number;
+  tipoResponsavel: TipoResponsavel;
+  responsavelFinanceiro: boolean;
+}
+

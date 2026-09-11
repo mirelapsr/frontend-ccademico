@@ -1,4 +1,5 @@
 import type { Aluno } from "../../types";
+import { formatarCpf } from "../../utils/formatadores";
 import "./CardAluno.css";
 
 interface CardAlunoProps {
@@ -66,7 +67,7 @@ function CardAluno({ aluno, aoEditar, aoExcluir }: CardAlunoProps) {
           <span className="card-aluno__rotulo">Documentação</span>
           <div className="card-aluno__selos">
             <span className="card-aluno__selo">
-              CPF: <ValorOuVazio valor={aluno.cpfAluno} />
+              CPF: <ValorOuVazio valor={formatarCpf(aluno.cpfAluno)} />
             </span>
             <span className="card-aluno__selo">
               Nascimento: {formatarDataNascimento(aluno.dataNascimento)}

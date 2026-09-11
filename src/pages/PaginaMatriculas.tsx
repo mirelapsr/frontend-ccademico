@@ -4,7 +4,9 @@ import FormularioMatricula from "../components/matriculas/FormularioMatricula";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
 import { alunosMock, matriculasMock, turmasMock } from "../mock";
-import type { Matricula, MatriculaEntrada } from "../types";
+import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
+import { CHAVES_LOCALSTORAGE } from "../storage";
+import type { Aluno, Matricula, MatriculaEntrada, Turma } from "../types";
 
 type Tela = "lista" | "formulario";
 
@@ -17,7 +19,12 @@ function agora(): string {
 }
 
 function PaginaMatriculas() {
-  const [matriculas, setMatriculas] = useState<Matricula[]>(matriculasMock);
+  const [matriculas, setMatriculas] = useColecaoPersistida<Matricula>(
+    CHAVES_LOCALSTORAGE.matriculas,
+    matriculasMock
+  );
+  const [alunos] = useColecaoPersistida<Aluno>(CHAVES_LOCALSTORAGE.alunos, alunosMock);
+  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [matriculaEmEdicao, setMatriculaEmEdicao] = useState<Matricula | null>(null);
 
@@ -74,6 +81,21 @@ function PaginaMatriculas() {
     }
   }
 
+  /**
+   * Mesma regra do trigger `func_matricula_unica_ativa_ins/upd` do banco:
+   * um aluno não pode ter duas matrículas com `situacao = 'Ativa'` ao mesmo
+   * tempo. Roda no client antes do `salvar()` para dar feedback imediato,
+   * em vez de deixar o usuário só descobrir isso quando a API rejeitar.
+   */
+  function existeOutraMatriculaAtiva(alunoIdAluno: number): boolean {
+    return matriculas.some(
+      (matricula) =>
+        matricula.alunoIdAluno === alunoIdAluno &&
+        matricula.situacao === "Ativa" &&
+        matricula.idMatricula !== matriculaEmEdicao?.idMatricula
+    );
+  }
+
   function pedirConfirmacaoExclusao(idMatricula: number) {
     const matricula = matriculas.find((item) => item.idMatricula === idMatricula) ?? null;
     setMatriculaParaExcluir(matricula);
@@ -85,7 +107,7 @@ function PaginaMatriculas() {
       atual.filter((matricula) => matricula.idMatricula !== matriculaParaExcluir.idMatricula)
     );
     setMatriculaParaExcluir(null);
-    setMensagemSucesso("Matrícula excluída com sucesso!");
+    setMensagemSucesso("Deletado com sucesso!");
   }
 
   function cancelarExclusao() {
@@ -93,7 +115,7 @@ function PaginaMatriculas() {
   }
 
   const alunoDaMatriculaParaExcluir = matriculaParaExcluir
-    ? alunosMock.find((aluno) => aluno.idAluno === matriculaParaExcluir.alunoIdAluno)
+    ? alunos.find((aluno) => aluno.idAluno === matriculaParaExcluir.alunoIdAluno)
     : null;
 
   return (
@@ -101,8 +123,8 @@ function PaginaMatriculas() {
       {telaAtual === "lista" ? (
         <ListaMatriculas
           matriculas={matriculas}
-          alunos={alunosMock}
-          turmas={turmasMock}
+          alunos={alunos}
+          turmas={turmas}
           aoNovaMatricula={abrirNovaMatricula}
           aoEditarMatricula={abrirEdicaoMatricula}
           aoExcluirMatricula={pedirConfirmacaoExclusao}
@@ -110,8 +132,9 @@ function PaginaMatriculas() {
       ) : (
         <FormularioMatricula
           matriculaEditando={matriculaEmEdicao}
-          alunos={alunosMock}
-          turmas={turmasMock}
+          alunos={alunos}
+          turmas={turmas}
+          existeOutraMatriculaAtiva={existeOutraMatriculaAtiva}
           salvar={handleSalvarFormulario}
           cancelar={cancelarFormulario}
         />

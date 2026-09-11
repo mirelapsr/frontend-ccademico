@@ -4,6 +4,8 @@ import FormularioEscola from "../components/escolas/FormularioEscola";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
 import { escolasMock } from "../mock";
+import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
+import { CHAVES_LOCALSTORAGE } from "../storage";
 import type { Escola, EscolaEntrada } from "../types";
 
 type Tela = "lista" | "formulario";
@@ -19,7 +21,10 @@ function agora(): string {
 
 
 function PaginaEscolas() {
-  const [escolas, setEscolas] = useState<Escola[]>(escolasMock);
+  const [escolas, setEscolas] = useColecaoPersistida<Escola>(
+    CHAVES_LOCALSTORAGE.escolas,
+    escolasMock
+  );
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [escolaEmEdicao, setEscolaEmEdicao] = useState<Escola | null>(null);
 
@@ -92,6 +97,7 @@ function PaginaEscolas() {
       atual.filter((escola) => escola.idEscola !== escolaParaExcluir.idEscola)
     );
     setEscolaParaExcluir(null);
+    setMensagemSucesso("Deletado com sucesso!");
   }
 
   function cancelarExclusao() {

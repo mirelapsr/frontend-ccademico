@@ -8,6 +8,13 @@ interface FormularioMatriculaProps {
   alunos: Aluno[];
   /** Turmas disponíveis, para o <select> de turma. */
   turmas: Turma[];
+  /**
+   * Espelha a regra do trigger `func_matricula_unica_ativa_ins/upd`: recebe
+   * o `alunoIdAluno` candidato e deve responder se já existe, para esse
+   * aluno, outra matrícula com `situacao === "Ativa"` (a que está sendo
+   * editada não conta). Só é chamada quando a situação escolhida é "Ativa".
+   */
+  existeOutraMatriculaAtiva: (alunoIdAluno: number) => boolean;
   salvar: (dados: MatriculaEntrada) => void;
   cancelar: () => void;
 }
@@ -20,6 +27,7 @@ function FormularioMatricula({
   matriculaEditando,
   alunos,
   turmas,
+  existeOutraMatriculaAtiva,
   salvar,
   cancelar,
 }: FormularioMatriculaProps) {
@@ -42,6 +50,15 @@ function FormularioMatricula({
 
     if (!alunoIdAluno || !turmaIdTurma || !dataMatricula) {
       setErro("Aluno, turma e data da matrícula são obrigatórios.");
+      return;
+    }
+
+    if (situacao === "Ativa" && existeOutraMatriculaAtiva(Number(alunoIdAluno))) {
+      const aluno = alunos.find((item) => item.idAluno === Number(alunoIdAluno));
+      setErro(
+        `${aluno?.nomeAluno ?? "Este aluno"} já possui uma matrícula ativa. ` +
+          "Encerre ou transfira a matrícula atual antes de criar outra."
+      );
       return;
     }
 

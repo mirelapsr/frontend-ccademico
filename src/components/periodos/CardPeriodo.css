@@ -1,0 +1,191 @@
+.card-periodo {
+  background: var(--superficie);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(32, 28, 22, 0.06),
+    0 2px 8px rgba(32, 28, 22, 0.07);
+  padding: 20px 24px;
+}
+
+.card-periodo__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.card-periodo__titulo-bloco {
+  min-width: 0;
+}
+
+.card-periodo__nome {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.card-periodo__ano {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.card-periodo__ano svg {
+  flex-shrink: 0;
+  color: var(--texto-suave);
+}
+
+.card-periodo__acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.card-periodo__selo-situacao {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.card-periodo__selo-situacao--ativo {
+  background: #e3f3e8;
+  color: #1e6b3c;
+}
+
+.card-periodo__selo-situacao--encerrado {
+  background: var(--fundo);
+  color: var(--texto-suave);
+  border: 1px solid var(--borda);
+}
+
+.card-periodo__botao-editar {
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.card-periodo__botao-editar:hover {
+  background: var(--fundo);
+  border-color: var(--azul-acao);
+}
+
+.card-periodo__botao-excluir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--perigo);
+  color: #ffffff;
+  border: 1px solid var(--perigo);
+  border-radius: 8px;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.card-periodo__botao-excluir:hover {
+  background: var(--perigo-escuro);
+  border-color: var(--perigo-escuro);
+}
+
+.card-periodo__botao-editar:focus-visible,
+.card-periodo__botao-excluir:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 2px;
+}
+
+.card-periodo__corpo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin: 18px 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--borda);
+  border-bottom: 1px solid var(--borda);
+}
+
+.card-periodo__coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.card-periodo__rotulo {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+
+.card-periodo__valor {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}
+
+.card-periodo__valor--suave {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+.card-periodo__vazio {
+  color: var(--vazio);
+  font-style: italic;
+}
+
+.card-periodo__rodape {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 20px;
+}
+
+.card-periodo__rodape span {
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .card-periodo {
+    padding: 16px;
+  }
+
+  .card-periodo__corpo {
+    grid-template-columns: 1fr;
+  }
+
+  .card-periodo__cabecalho {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-periodo__acoes {
+    justify-content: flex-end;
+  }
+
+  .card-periodo__rodape {
+    justify-content: flex-start;
+  }
+}

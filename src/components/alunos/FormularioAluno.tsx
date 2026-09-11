@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { Aluno, AlunoEntrada, SituacaoAluno } from "../../types";
+import { limparCpf } from "../../utils/formatadores";
 import "./FormularioAluno.css";
 
 interface FormularioAlunoProps {
@@ -33,7 +34,7 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
       numeroMatricula: numeroMatricula.trim(),
       nomeAluno: nomeAluno.trim(),
       dataNascimento,
-      cpfAluno: cpfAluno.trim() || null,
+      cpfAluno: cpfAluno.trim() ? limparCpf(cpfAluno) : null,
       telefoneAluno: telefoneAluno.trim() || null,
       emailAluno: emailAluno.trim() || null,
       cepAluno: cepAluno.trim() || null,

@@ -4,7 +4,9 @@ import FormularioTurma from "../components/turmas/FormularioTurma";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
 import { escolasMock, turmasMock } from "../mock";
-import type { Turma, TurmaEntrada } from "../types";
+import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
+import { CHAVES_LOCALSTORAGE } from "../storage";
+import type { Escola, Turma, TurmaEntrada } from "../types";
 
 type Tela = "lista" | "formulario";
 
@@ -17,7 +19,8 @@ function agora(): string {
 }
 
 function PaginaTurmas() {
-  const [turmas, setTurmas] = useState<Turma[]>(turmasMock);
+  const [turmas, setTurmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
+  const [escolas] = useColecaoPersistida<Escola>(CHAVES_LOCALSTORAGE.escolas, escolasMock);
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [turmaEmEdicao, setTurmaEmEdicao] = useState<Turma | null>(null);
 
@@ -81,7 +84,7 @@ function PaginaTurmas() {
     if (!turmaParaExcluir) return;
     setTurmas((atual) => atual.filter((turma) => turma.idTurma !== turmaParaExcluir.idTurma));
     setTurmaParaExcluir(null);
-    setMensagemSucesso("Turma excluída com sucesso!");
+    setMensagemSucesso("Deletado com sucesso!");
   }
 
   function cancelarExclusao() {
@@ -93,7 +96,7 @@ function PaginaTurmas() {
       {telaAtual === "lista" ? (
         <ListaTurmas
           turmas={turmas}
-          escolas={escolasMock}
+          escolas={escolas}
           aoNovaTurma={abrirNovaTurma}
           aoEditarTurma={abrirEdicaoTurma}
           aoExcluirTurma={pedirConfirmacaoExclusao}
@@ -101,7 +104,7 @@ function PaginaTurmas() {
       ) : (
         <FormularioTurma
           turmaEditando={turmaEmEdicao}
-          escolas={escolasMock}
+          escolas={escolas}
           salvar={handleSalvarFormulario}
           cancelar={cancelarFormulario}
         />

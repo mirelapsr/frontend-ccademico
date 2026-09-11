@@ -4,6 +4,8 @@ import FormularioAluno from "../components/alunos/FormularioAluno";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
 import { alunosMock } from "../mock";
+import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
+import { CHAVES_LOCALSTORAGE } from "../storage";
 import type { Aluno, AlunoEntrada } from "../types";
 
 type Tela = "lista" | "formulario";
@@ -17,7 +19,7 @@ function agora(): string {
 }
 
 function PaginaAlunos() {
-  const [alunos, setAlunos] = useState<Aluno[]>(alunosMock);
+  const [alunos, setAlunos] = useColecaoPersistida<Aluno>(CHAVES_LOCALSTORAGE.alunos, alunosMock);
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [alunoEmEdicao, setAlunoEmEdicao] = useState<Aluno | null>(null);
 
@@ -81,6 +83,7 @@ function PaginaAlunos() {
     if (!alunoParaExcluir) return;
     setAlunos((atual) => atual.filter((aluno) => aluno.idAluno !== alunoParaExcluir.idAluno));
     setAlunoParaExcluir(null);
+    setMensagemSucesso("Deletado com sucesso!");
   }
 
   function cancelarExclusao() {

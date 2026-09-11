@@ -1,0 +1,117 @@
+
+.lista-periodos__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.lista-periodos__cabecalho h2 {
+  margin: 0;
+}
+
+.lista-periodos__botao-novo {
+  background: var(--azul-acao);
+  color: #ffffff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.lista-periodos__botao-novo:hover {
+  background: var(--azul-acao-escuro);
+}
+
+.lista-periodos__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.lista-periodos__busca {
+  position: relative;
+  flex: 1 1 320px;
+  display: flex;
+  align-items: center;
+}
+
+.lista-periodos__busca svg {
+  position: absolute;
+  left: 14px;
+  color: var(--texto-suave);
+  pointer-events: none;
+}
+
+.lista-periodos__busca input {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--superficie);
+  font-family: var(--fonte-corpo);
+  font-size: 0.92rem;
+  color: var(--texto);
+}
+
+.lista-periodos__busca input::placeholder {
+  color: var(--texto-suave);
+}
+
+.lista-periodos__busca input:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 1px;
+}
+
+.lista-periodos__select {
+  flex: 0 1 200px;
+  padding: 10px 14px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--superficie);
+  font-family: var(--fonte-corpo);
+  font-size: 0.92rem;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.lista-periodos__select:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 1px;
+}
+
+.lista-periodos__grade {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lista-periodos__vazio-geral {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--texto-suave);
+  font-style: italic;
+  background: var(--superficie);
+  border: 1px dashed var(--borda);
+  border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+  .lista-periodos__cabecalho {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lista-periodos__botao-novo {
+    width: 100%;
+  }
+
+  .lista-periodos__select {
+    flex-basis: 100%;
+  }
+}
