@@ -9,6 +9,8 @@ import PaginaProfessores from "./pages/PaginaProfessores";
 import PaginaMaterias from "./pages/PaginaMaterias";
 import PaginaPeriodos from "./pages/PaginaPeriodos";
 import PaginaResponsaveis from "./pages/PaginaResponsaveis";
+import PaginaVinculos from "./pages/PaginaVinculos";
+import PaginaBoletos from "./pages/PaginaBoletos";
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
           <Route path="materias" element={<PaginaMaterias />} />
           <Route path="periodos" element={<PaginaPeriodos />} />
           <Route path="responsaveis" element={<PaginaResponsaveis />} />
+          <Route path="vinculos" element={<PaginaVinculos />} />
+          <Route path="boletos" element={<PaginaBoletos />} />
         </Route>
       </Routes>
     </BrowserRouter>

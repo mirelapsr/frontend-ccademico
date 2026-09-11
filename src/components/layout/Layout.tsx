@@ -4,13 +4,15 @@ import "./Layout.css";
 const ITENS_MENU = [
   { rota: "/", rotulo: "Dashboard" },
   { rota: "/escolas", rotulo: "Escolas" },
-  { rota: "/alunos", rotulo: "Alunos" },
-  { rota: "/turmas", rotulo: "Turmas" },
-  { rota: "/matriculas", rotulo: "Matrículas" },
+  { rota: "/periodos", rotulo: "Períodos" },
   { rota: "/professores", rotulo: "Professores" },
   { rota: "/materias", rotulo: "Matérias" },
-  { rota: "/periodos", rotulo: "Períodos" },
+  { rota: "/turmas", rotulo: "Turmas" },
+  { rota: "/alunos", rotulo: "Alunos" },
   { rota: "/responsaveis", rotulo: "Responsáveis" },
+  { rota: "/vinculos", rotulo: "Vínculos" },
+  { rota: "/matriculas", rotulo: "Matrículas" },
+  { rota: "/boletos", rotulo: "Boletos" },
 ];
 
 function Layout() {

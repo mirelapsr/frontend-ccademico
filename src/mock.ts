@@ -1,13 +1,4 @@
-import type {
-  Escola,
-  Aluno,
-  Turma,
-  Matricula,
-  Professor,
-  Materia,
-  Periodo,
-  Responsavel,
-} from "./types.ts";
+import type { Escola, Aluno, Turma, Matricula, Professor, Materia, Responsavel, AlunoResponsavel, Boleto, Periodo } from "./types";
 
 export const escolasMock: Escola[] = [
   {
@@ -473,4 +464,22 @@ export const responsaveisMock: Responsavel[] = [
     criadoEm: "2026-01-05T13:20:00",
     atualizadoEm: "2026-01-05T13:20:00"
   }
+];
+
+export const vinculosMock: AlunoResponsavel[] = [
+  { alunoIdAluno: 1, responsavelIdResponsavel: 1, tipoResponsavel: "Mae", responsavelFinanceiro: true },
+  { alunoIdAluno: 1, responsavelIdResponsavel: 2, tipoResponsavel: "Pai", responsavelFinanceiro: false },
+  { alunoIdAluno: 2, responsavelIdResponsavel: 3, tipoResponsavel: "ResponsavelLegal", responsavelFinanceiro: true },
+  { alunoIdAluno: 3, responsavelIdResponsavel: 4, tipoResponsavel: "Mae", responsavelFinanceiro: true },
+  { alunoIdAluno: 4, responsavelIdResponsavel: 5, tipoResponsavel: "Pai", responsavelFinanceiro: true },
+  { alunoIdAluno: 5, responsavelIdResponsavel: 1, tipoResponsavel: "Outro", responsavelFinanceiro: true }
+];
+
+export const boletosMock: Boleto[] = [
+  { idBoleto: 1, numeroBoleto: "BOL-2026-0001", alunoIdAluno: 1, competencia: "2026-01", valorMensalidade: 600.00, dataVencimento: "2026-01-10", dataPagamento: "2026-01-08", situacao: "Pago" },
+  { idBoleto: 2, numeroBoleto: "BOL-2026-0002", alunoIdAluno: 2, competencia: "2026-01", valorMensalidade: 450.00, dataVencimento: "2026-01-10", dataPagamento: null, situacao: "Atrasado" },
+  { idBoleto: 3, numeroBoleto: "BOL-2026-0003", alunoIdAluno: 3, competencia: "2026-01", valorMensalidade: 500.00, dataVencimento: "2026-01-15", dataPagamento: null, situacao: "Cancelado" },
+  { idBoleto: 4, numeroBoleto: "BOL-2026-0004", alunoIdAluno: 4, competencia: "2026-02", valorMensalidade: 550.00, dataVencimento: "2026-02-10", dataPagamento: null, situacao: "Pendente" },
+  { idBoleto: 5, numeroBoleto: "BOL-2026-0005", alunoIdAluno: 5, competencia: "2026-02", valorMensalidade: 600.00, dataVencimento: "2026-02-05", dataPagamento: null, situacao: "Pendente" },
+  { idBoleto: 6, numeroBoleto: "BOL-2026-0006", alunoIdAluno: 1, competencia: "2026-02", valorMensalidade: 600.00, dataVencimento: "2026-02-10", dataPagamento: null, situacao: "Pendente" }
 ];

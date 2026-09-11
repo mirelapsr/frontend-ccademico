@@ -178,6 +178,9 @@ export type ResponsavelEntrada = Omit<Responsavel, "idResponsavel" | "criadoEm" 
  * (client-side, em `PaginaResponsaveis`/`PaginaAlunos`) quanto pelo trigger
  * `func_ar_financeiro_unico_ins/upd` no banco.
  */
+/**
+ * Vínculo Aluno/Responsável
+ */
 export type TipoResponsavel = "Pai" | "Mae" | "ResponsavelLegal" | "Outro";
 
 export interface AlunoResponsavel {
@@ -187,3 +190,22 @@ export interface AlunoResponsavel {
   responsavelFinanceiro: boolean;
 }
 
+export type AlunoResponsavelEntrada = AlunoResponsavel;
+
+/**
+ * Boleto
+ */
+export type SituacaoBoleto = "Pendente" | "Pago" | "Atrasado" | "Cancelado";
+
+export interface Boleto {
+  idBoleto: number;
+  numeroBoleto: string;
+  alunoIdAluno: number;
+  competencia: string; // formato YYYY-MM
+  valorMensalidade: number;
+  dataVencimento: string; // formato YYYY-MM-DD
+  dataPagamento: string | null;
+  situacao: SituacaoBoleto;
+}
+
+export type BoletoEntrada = Omit<Boleto, "idBoleto">;

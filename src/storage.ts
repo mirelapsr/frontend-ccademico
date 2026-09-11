@@ -11,12 +11,14 @@
 export const CHAVES_LOCALSTORAGE = {
   escolas: "escolas",
   alunos: "alunos",
+  responsaveis: "responsaveis",
   turmas: "turmas",
   matriculas: "matriculas",
   professores: "professores",
   materias: "materias",
   periodos: "periodos",
-  responsaveis: "responsaveis",
+  vinculos: "vinculos",
+  boletos: "boletos",
 } as const;
 
 export function carregarColecao<T>(chave: string, mockInicial: T[]): T[] {
