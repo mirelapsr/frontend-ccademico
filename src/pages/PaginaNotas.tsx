@@ -54,12 +54,10 @@ function PaginaNotas() {
   const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
   const [periodos] = useColecaoPersistida<Periodo>(CHAVES_LOCALSTORAGE.periodos, periodosMock);
 
-  // Filtros da tela de grid (etapa 1)
   const [turmaSelecionada, setTurmaSelecionada] = useState<number | "">("");
   const [gradeSelecionada, setGradeSelecionada] = useState<number | "">("");
   const [periodoSelecionado, setPeriodoSelecionado] = useState<number | "">("");
 
-  // Avaliação aberta no diário (etapa 2) — null = ainda na tela de grid.
   const [avaliacaoAtivaId, setAvaliacaoAtivaId] = useState<number | null>(null);
   const [estadoLancamento, setEstadoLancamento] = useState<Record<number, EstadoLinha>>({});
   const [modalNotaGeralAberto, setModalNotaGeralAberto] = useState(false);
@@ -81,7 +79,6 @@ function PaginaNotas() {
     [matriculas, turmaSelecionada]
   );
 
-  // --- Etapa 1: grid de avaliações filtradas + resumo de cada uma -------
   const itensGrade: ItemAvaliacaoResumo[] = useMemo(() => {
     if (turmaSelecionada === "") return [];
     const idsGradesDaTurma = new Set(gradesDaTurma.map((grade) => grade.idGrade));
@@ -120,7 +117,6 @@ function PaginaNotas() {
       });
   }, [avaliacoes, gradesDaTurma, materias, notas, turmaSelecionada, gradeSelecionada, periodoSelecionado, matriculasAtivasDaTurma]);
 
-  // --- Etapa 2: diário de lançamento da avaliação aberta -----------------
   const avaliacaoAtiva = useMemo(
     () => avaliacoes.find((avaliacao) => avaliacao.idAvaliacao === avaliacaoAtivaId) ?? null,
     [avaliacoes, avaliacaoAtivaId]
@@ -157,11 +153,6 @@ function PaginaNotas() {
     [matriculas, gradeDaAvaliacaoAtiva]
   );
 
-  // Reabre o diário do zero sempre que a avaliação selecionada muda: puxa
-  // as notas já lançadas para essa avaliação e monta o estado de edição.
-  // Não depende de `notas`/`matriculas` de propósito — só a troca de
-  // avaliação deve "reabrir a planilha", não uma escrita no meio da edição
-  // (ex.: o próprio "Salvar Alterações" atualizando `notas`).
   useEffect(() => {
     if (avaliacaoAtivaId === null) {
       setEstadoLancamento({});
@@ -186,10 +177,11 @@ function PaginaNotas() {
       );
       novoEstado[matricula.idMatricula] = notaExistente
         ? {
-            valorNota: notaExistente.valorNota.toLocaleString("pt-BR", {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            }),
+            // String(number) sempre usa ponto — é o único formato que um
+            // <input type="number"> aceita como value. toLocaleString("pt-BR")
+            // gera vírgula, que o input rejeita silenciosamente (o valor
+            // nunca aparece, dando a impressão de estado "travado").
+            valorNota: String(notaExistente.valorNota),
             observacao: notaExistente.observacao ?? "",
           }
         : { valorNota: "", observacao: "" };
@@ -240,7 +232,12 @@ function PaginaNotas() {
   }
 
   function handleAplicarNotaGeral(valor: number) {
-    const valorFormatado = valor.toLocaleString("pt-BR", {
+    // Dois formatos separados de propósito: o input é type="number" e só
+    // aceita ponto como separador decimal (String(valor) sempre gera isso);
+    // vírgula (toLocaleString pt-BR) é só para o texto do Toast, nunca para
+    // o value do input — era exatamente essa mistura que travava os campos.
+    const valorParaInput = String(valor);
+    const valorParaExibicao = valor.toLocaleString("pt-BR", {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
@@ -248,7 +245,7 @@ function PaginaNotas() {
       const novo = { ...atual };
       for (const matricula of matriculasDaAvaliacaoAtiva) {
         novo[matricula.idMatricula] = {
-          valorNota: valorFormatado,
+          valorNota: valorParaInput,
           observacao: novo[matricula.idMatricula]?.observacao ?? "",
         };
       }
@@ -256,7 +253,7 @@ function PaginaNotas() {
     });
     setModalNotaGeralAberto(false);
     setMensagem({
-      texto: `Nota ${valorFormatado} aplicada para todos os alunos da avaliação.`,
+      texto: `Nota ${valorParaExibicao} aplicada para todos os alunos da avaliação.`,
       tipo: "sucesso",
     });
   }
@@ -279,8 +276,6 @@ function PaginaNotas() {
 
       for (const matricula of matriculasDaAvaliacaoAtiva) {
         const estado = estadoLancamento[matricula.idMatricula];
-        // Campo vazio = "ainda não avaliado". Não apaga uma nota já salva
-        // anteriormente — só grava quando o professor de fato digitou algo.
         if (!estado || estado.valorNota.trim() === "") continue;
 
         const valorNota = Number(estado.valorNota.replace(",", "."));
