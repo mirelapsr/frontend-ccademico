@@ -209,3 +209,118 @@ export interface Boleto {
 }
 
 export type BoletoEntrada = Omit<Boleto, "idBoleto">;
+
+/**
+ * Grade Curricular — junção Turma × Matéria × Professor: para cada turma,
+ * quais matérias são lecionadas, por qual professor, em que ano letivo.
+ * Espelha `uq_grade_turma_materia`: uma turma não pode ter a mesma matéria
+ * cadastrada duas vezes na grade (client-side em `PaginaGrades`).
+ */
+export interface GradeCurricular {
+  idGrade: number;
+  /** FK — id da Turma a que esta grade pertence. */
+  turmaIdTurma: number;
+  /** FK — id da Matéria lecionada. */
+  materiaIdMateria: number;
+  /** FK — id do Professor responsável por essa matéria nesta turma. */
+  professorIdProfessor: number;
+  anoLetivo: number;
+  cargaHorariaSemanal?: number | null;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export type GradeCurricularEntrada = Omit<
+  GradeCurricular,
+  "idGrade" | "criadoEm" | "atualizadoEm"
+>;
+
+/**
+ * Avaliação — instrumento de avaliação vinculado a uma Grade Curricular
+ * (ou seja, a uma combinação turma+matéria+professor) e a um Período letivo.
+ */
+export type TipoAvaliacao = "Prova" | "Trabalho" | "Seminario" | "Participacao" | "Outro";
+
+export interface Avaliacao {
+  idAvaliacao: number;
+  /** FK — id da Grade Curricular (turma+matéria+professor) avaliada. */
+  gradeIdGrade: number;
+  /** FK — id do Período letivo em que a avaliação ocorre. */
+  periodoIdPeriodo: number;
+  nomeAvaliacao: string;
+  peso?: number;
+  /** Data ISO (ex.: "2026-03-20"). */
+  dataAvaliacao?: string;
+  tipo: TipoAvaliacao;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export type AvaliacaoEntrada = Omit<Avaliacao, "idAvaliacao" | "criadoEm" | "atualizadoEm">;
+
+/**
+ * Frequência — registro de presença de uma Matrícula (aluno matriculado em
+ * uma turma) em uma aula de uma Grade Curricular (turma+matéria+professor)
+ * em uma data específica.
+ */
+export type StatusFrequencia = "Presente" | "Ausente" | "Justificado";
+
+export interface Frequencia {
+  idFrequencia: number;
+  /** FK — id da Matrícula (aluno na turma) cuja presença está sendo registrada. */
+  matriculaIdMatricula: number;
+  /** FK — id da Grade Curricular (aula de qual matéria/professor). */
+  gradeIdGrade: number;
+  /** Data ISO (ex.: "2026-03-09"). */
+  dataAula: string;
+  status: StatusFrequencia;
+  justificativa?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export type FrequenciaEntrada = Omit<Frequencia, "idFrequencia" | "criadoEm" | "atualizadoEm">;
+
+/**
+ * Nota — resultado de uma Matrícula em uma Avaliação específica.
+ * `uq_nota_matricula_avaliacao` garante uma única nota por par
+ * matrícula+avaliação — reforçado client-side em `PaginaNotas`.
+ */
+export interface Nota {
+  idNota: number;
+  /** FK — id da Matrícula (aluno na turma) avaliado. */
+  matriculaIdMatricula: number;
+  /** FK — id da Avaliação a que esta nota se refere. */
+  avaliacaoIdAvaliacao: number;
+  /** Entre 0.00 e 10.00 (`chk_valor_nota`). */
+  valorNota: number;
+  observacao?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export type NotaEntrada = Omit<Nota, "idNota" | "criadoEm" | "atualizadoEm">;
+
+/**
+ * Boletim — consolidado de uma Matrícula (aluno) num Período letivo: média
+ * final, total de faltas e situação. Único por par matrícula+período
+ * (`uq_boletim_matricula_periodo`).
+ */
+export type SituacaoBoletim = "Aprovado" | "Reprovado" | "Recuperacao" | "Em Andamento";
+
+export interface Boletim {
+  idBoletim: number;
+  /** FK — id da Matrícula (aluno) a que este boletim se refere. */
+  matriculaIdMatricula: number;
+  /** FK — id do Período letivo consolidado neste boletim. */
+  periodoIdPeriodo: number;
+  /** Entre 0.00 e 10.00, ou nulo enquanto o período ainda está em curso. */
+  mediaFinal?: number | null;
+  totalFaltas?: number;
+  situacao: SituacaoBoletim;
+  observacoes?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export type BoletimEntrada = Omit<Boletim, "idBoletim" | "criadoEm" | "atualizadoEm">;

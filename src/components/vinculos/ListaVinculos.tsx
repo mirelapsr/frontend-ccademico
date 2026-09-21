@@ -35,7 +35,7 @@ function ListaVinculos({ vinculos, alunos, responsaveis, aoNovoVinculo, aoExclui
           style={{ width: '100%', maxWidth: '400px' }}
         />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '16px' }}>
         {vinculosFiltrados.map((v) => (
           <CardVinculo 
             key={`${v.alunoIdAluno}-${v.responsavelIdResponsavel}`} 

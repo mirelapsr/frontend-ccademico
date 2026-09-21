@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ListaAlunos from "../components/alunos/ListaAlunos";
 import FormularioAluno from "../components/alunos/FormularioAluno";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
-import { alunosMock } from "../mock";
+import { alunosMock, matriculasMock, turmasMock } from "../mock";
 import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
 import { CHAVES_LOCALSTORAGE } from "../storage";
-import type { Aluno, AlunoEntrada } from "../types";
+import type { Aluno, AlunoEntrada, Matricula, Turma } from "../types";
 
 type Tela = "lista" | "formulario";
 
@@ -20,12 +20,31 @@ function agora(): string {
 
 function PaginaAlunos() {
   const [alunos, setAlunos] = useColecaoPersistida<Aluno>(CHAVES_LOCALSTORAGE.alunos, alunosMock);
+  const [matriculas] = useColecaoPersistida<Matricula>(CHAVES_LOCALSTORAGE.matriculas, matriculasMock);
+  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [alunoEmEdicao, setAlunoEmEdicao] = useState<Aluno | null>(null);
 
   const [alunoParaExcluir, setAlunoParaExcluir] = useState<Aluno | null>(null);
 
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+
+  // Join no frontend: para cada aluno, acha a matrícula ativa e, a partir
+  // dela, a turma correspondente — sem tocar em backend/schema. Resultado
+  // indexado por idAluno para consulta O(1) ao montar os cards.
+  const nomeTurmaPorAluno = useMemo(() => {
+    const mapa: Record<number, string | undefined> = {};
+    for (const aluno of alunos) {
+      const matriculaAtiva = matriculas.find(
+        (matricula) => matricula.alunoIdAluno === aluno.idAluno && matricula.situacao === "Ativa"
+      );
+      const turma = matriculaAtiva
+        ? turmas.find((item) => item.idTurma === matriculaAtiva.turmaIdTurma)
+        : undefined;
+      mapa[aluno.idAluno] = turma ? `${turma.nomeTurma} (${turma.turno})` : undefined;
+    }
+    return mapa;
+  }, [alunos, matriculas, turmas]);
 
   function abrirNovoAluno() {
     setAlunoEmEdicao(null);
@@ -95,6 +114,7 @@ function PaginaAlunos() {
       {telaAtual === "lista" ? (
         <ListaAlunos
           alunos={alunos}
+          nomeTurmaPorAluno={nomeTurmaPorAluno}
           aoNovoAluno={abrirNovoAluno}
           aoEditarAluno={abrirEdicaoAluno}
           aoExcluirAluno={pedirConfirmacaoExclusao}

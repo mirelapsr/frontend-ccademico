@@ -1,24 +1,20 @@
-/**
- * Camada única de persistência local.
- *
- * Regra de inicialização: ao ler uma coleção, se a chave ainda não existir
- * no localStorage, ela é populada com os dados de `mock.ts` (uma única vez)
- * e essa cópia inicial já é gravada de volta — assim, o localStorage vira a
- * fonte única de verdade para todas as páginas (inclusive o Dashboard) a
- * partir da primeira leitura.
- */
 
 export const CHAVES_LOCALSTORAGE = {
-  escolas: "escolas",
-  alunos: "alunos",
-  responsaveis: "responsaveis",
-  turmas: "turmas",
-  matriculas: "matriculas",
-  professores: "professores",
-  materias: "materias",
-  periodos: "periodos",
-  vinculos: "vinculos",
-  boletos: "boletos",
+  escolas: "portal_v2_escolas",
+  alunos: "portal_v2_alunos",
+  responsaveis: "portal_v2_responsaveis",
+  turmas: "portal_v2_turmas",
+  matriculas: "portal_v2_matriculas",
+  professores: "portal_v2_professores",
+  materias: "portal_v2_materias",
+  periodos: "portal_v2_periodos",
+  vinculos: "portal_v2_vinculos",
+  boletos: "portal_v2_boletos",
+  gradesCurriculares: "portal_v2_gradesCurriculares",
+  avaliacoes: "portal_v2_avaliacoes",
+  frequencias: "portal_v2_frequencias",
+  notas: "portal_v2_notas",
+  boletins: "portal_v2_boletins",
 } as const;
 
 export function carregarColecao<T>(chave: string, mockInicial: T[]): T[] {

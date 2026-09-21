@@ -10,7 +10,12 @@ import PaginaMaterias from "./pages/PaginaMaterias";
 import PaginaPeriodos from "./pages/PaginaPeriodos";
 import PaginaResponsaveis from "./pages/PaginaResponsaveis";
 import PaginaVinculos from "./pages/PaginaVinculos";
-import PaginaBoletos from "./pages/PaginaBoletos";
+import PaginaPagamentos from "./pages/PaginaPagamentos";
+import PaginaGrades from "./pages/PaginaGrades";
+import PaginaAvaliacoes from "./pages/PaginaAvaliacoes";
+import PaginaFrequencias from "./pages/PaginaFrequencias";
+import PaginaNotas from "./pages/PaginaNotas";
+import PaginaBoletins from "./pages/PaginaBoletins";
 
 function App() {
   return (
@@ -27,7 +32,12 @@ function App() {
           <Route path="periodos" element={<PaginaPeriodos />} />
           <Route path="responsaveis" element={<PaginaResponsaveis />} />
           <Route path="vinculos" element={<PaginaVinculos />} />
-          <Route path="boletos" element={<PaginaBoletos />} />
+          <Route path="pagamentos" element={<PaginaPagamentos />} />
+          <Route path="grades" element={<PaginaGrades />} />
+          <Route path="avaliacoes" element={<PaginaAvaliacoes />} />
+          <Route path="frequencias" element={<PaginaFrequencias />} />
+          <Route path="notas" element={<PaginaNotas />} />
+          <Route path="boletins" element={<PaginaBoletins />} />
         </Route>
       </Routes>
     </BrowserRouter>

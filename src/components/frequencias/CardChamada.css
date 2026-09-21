@@ -1,0 +1,127 @@
+.card-chamada {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 12px 18px;
+}
+
+.card-chamada__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.card-chamada__aluno {
+  min-width: 0;
+}
+
+.card-chamada__nome {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.card-chamada__matricula {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+.card-chamada__opcoes {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.card-chamada__opcao {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.card-chamada__opcao:hover {
+  border-color: var(--marinho);
+}
+
+.card-chamada__opcao:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 2px;
+}
+
+/* Regra de UI obrigatória: cores suaves por status, só quando ativo */
+.card-chamada__opcao--presente.card-chamada__opcao--ativa {
+  background: #e3f3e8;
+  border-color: #e3f3e8;
+  color: #1e6b3c;
+}
+
+.card-chamada__opcao--ausente.card-chamada__opcao--ativa {
+  background: #fee2e2;
+  border-color: #fee2e2;
+  color: #991b1b;
+}
+
+.card-chamada__opcao--justificado.card-chamada__opcao--ativa {
+  background: #fef9c3;
+  border-color: #fef9c3;
+  color: #854d0e;
+}
+
+.card-chamada__justificativa {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+
+.card-chamada__justificativa span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.card-chamada__justificativa input {
+  font-family: var(--fonte-corpo);
+  font-size: 0.9rem;
+  color: var(--texto);
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.card-chamada__justificativa input:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  .card-chamada__linha {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-chamada__opcoes {
+    justify-content: stretch;
+  }
+
+  .card-chamada__opcao {
+    flex: 1;
+    text-align: center;
+  }
+}

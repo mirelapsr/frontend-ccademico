@@ -5,6 +5,8 @@ import "./ListaAlunos.css";
 
 interface ListaAlunosProps {
   alunos: Aluno[];
+  /** Mapa idAluno -> "Nome da Turma (Turno)", ou undefined sem matrícula ativa. */
+  nomeTurmaPorAluno: Record<number, string | undefined>;
   aoNovoAluno: () => void;
   aoEditarAluno: (idAluno: number) => void;
   aoExcluirAluno: (idAluno: number) => void;
@@ -12,7 +14,13 @@ interface ListaAlunosProps {
 
 type FiltroSituacao = "todas" | SituacaoAluno;
 
-function ListaAlunos({ alunos, aoNovoAluno, aoEditarAluno, aoExcluirAluno }: ListaAlunosProps) {
+function ListaAlunos({
+  alunos,
+  nomeTurmaPorAluno,
+  aoNovoAluno,
+  aoEditarAluno,
+  aoExcluirAluno,
+}: ListaAlunosProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
 
@@ -78,6 +86,7 @@ function ListaAlunos({ alunos, aoNovoAluno, aoEditarAluno, aoExcluirAluno }: Lis
             <CardAluno
               key={aluno.idAluno}
               aluno={aluno}
+              nomeTurma={nomeTurmaPorAluno[aluno.idAluno]}
               aoEditar={() => aoEditarAluno(aluno.idAluno)}
               aoExcluir={() => aoExcluirAluno(aluno.idAluno)}
             />

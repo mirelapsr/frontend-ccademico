@@ -8,11 +8,16 @@ const ITENS_MENU = [
   { rota: "/professores", rotulo: "Professores" },
   { rota: "/materias", rotulo: "Matérias" },
   { rota: "/turmas", rotulo: "Turmas" },
+  { rota: "/grades", rotulo: "Grade Curricular" },
+  { rota: "/avaliacoes", rotulo: "Avaliações" },
   { rota: "/alunos", rotulo: "Alunos" },
   { rota: "/responsaveis", rotulo: "Responsáveis" },
   { rota: "/vinculos", rotulo: "Vínculos" },
   { rota: "/matriculas", rotulo: "Matrículas" },
-  { rota: "/boletos", rotulo: "Boletos" },
+  { rota: "/frequencias", rotulo: "Frequência" },
+  { rota: "/notas", rotulo: "Notas" },
+  { rota: "/boletins", rotulo: "Boletim" },
+  { rota: "/pagamentos", rotulo: "Pagamentos" },
 ];
 
 function Layout() {

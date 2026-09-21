@@ -1,0 +1,129 @@
+.card-lancamento-nota {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 12px 18px;
+}
+
+.card-lancamento-nota__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.card-lancamento-nota__aluno {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.card-lancamento-nota__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--marinho);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.card-lancamento-nota__identificacao {
+  min-width: 0;
+}
+
+.card-lancamento-nota__nome {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.card-lancamento-nota__matricula {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+.card-lancamento-nota__campos {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.card-lancamento-nota__campo-nota,
+.card-lancamento-nota__campo-observacao {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-lancamento-nota__campo-nota span,
+.card-lancamento-nota__campo-observacao span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.card-lancamento-nota__campo-nota input,
+.card-lancamento-nota__campo-observacao input {
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+  color: var(--texto);
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.card-lancamento-nota__campo-nota input {
+  width: 84px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.card-lancamento-nota__campo-observacao input {
+  width: 220px;
+}
+
+.card-lancamento-nota__campo-nota input:focus-visible,
+.card-lancamento-nota__campo-observacao input:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 1px;
+}
+
+.card-lancamento-nota__input-nota--invalida {
+  border-color: var(--perigo) !important;
+  background-color: #fef2f2 !important;
+  outline-color: var(--perigo) !important;
+}
+
+.card-lancamento-nota__erro {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--perigo);
+}
+
+@media (max-width: 640px) {
+  .card-lancamento-nota__linha {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-lancamento-nota__campos {
+    flex-direction: column;
+  }
+
+  .card-lancamento-nota__campo-nota input,
+  .card-lancamento-nota__campo-observacao input {
+    width: 100%;
+  }
+}

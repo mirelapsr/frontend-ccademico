@@ -1,0 +1,114 @@
+
+
+.formulario-boletim {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 2px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.formulario-boletim__cabecalho {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.formulario-boletim__cabecalho h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.formulario-boletim__form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 20px;
+  padding: 24px;
+}
+
+.formulario-boletim__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.formulario-boletim__campo--largo {
+  grid-column: 1 / -1;
+}
+
+.formulario-boletim__campo input,
+.formulario-boletim__campo select {
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+  color: var(--texto);
+  padding: 9px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #ffffff;
+  cursor: text;
+}
+
+.formulario-boletim__campo select {
+  cursor: pointer;
+}
+
+.formulario-boletim__campo textarea {
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+  color: var(--texto);
+  padding: 9px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #ffffff;
+  resize: vertical;
+  min-height: 72px;
+}
+
+.formulario-boletim__campo textarea:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 1px;
+}
+
+.formulario-boletim__campo input:focus-visible,
+.formulario-boletim__campo select:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 1px;
+}
+
+.formulario-boletim__erro {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--perigo);
+  border-radius: 2px;
+  color: var(--perigo);
+  font-size: 0.85rem;
+  background: #fbeae9;
+}
+
+.formulario-boletim__acoes {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--borda);
+}
+
+.formulario-boletim__botao-cancelar {
+  background: transparent;
+  color: var(--texto-suave);
+  border: 1px solid var(--borda);
+}
+
+.formulario-boletim__botao-cancelar:hover {
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+@media (max-width: 640px) {
+  .formulario-boletim__form {
+    grid-template-columns: 1fr;
+  }
+}
