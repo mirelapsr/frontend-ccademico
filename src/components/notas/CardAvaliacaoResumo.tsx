@@ -85,7 +85,7 @@ function CardAvaliacaoResumo({
           {notasLancadas} de {totalAlunos} notas lançadas
         </span>
         <button type="button" className="card-avaliacao-resumo__botao" onClick={aoLancarNotas}>
-          Lançar / Editar Notas
+          Editar Notas
         </button>
       </div>
     </article>
