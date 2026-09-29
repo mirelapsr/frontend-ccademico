@@ -1,0 +1,61 @@
+.pagina-perfil__cabecalho {
+  margin-bottom: 24px;
+}
+
+.pagina-perfil__cabecalho h1 {
+  font-size: 1.8rem;
+  margin: 0 0 6px;
+}
+
+.pagina-perfil__cabecalho p {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.pagina-perfil__form {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 2px;
+  max-width: 520px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pagina-perfil__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.pagina-perfil__campo input {
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+  color: var(--texto);
+  padding: 9px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.pagina-perfil__campo input:focus-visible {
+  outline: 2px solid var(--marinho);
+  outline-offset: 1px;
+}
+
+.pagina-perfil__acoes {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--borda);
+}
+
+@media (max-width: 640px) {
+  .pagina-perfil__form {
+    padding: 18px;
+  }
+}
