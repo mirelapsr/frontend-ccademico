@@ -1,122 +1,142 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ListaEscolas from "../components/escolas/ListaEscolas";
 import FormularioEscola from "../components/escolas/FormularioEscola";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
-import { escolasMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+import {
+  atualizarEscola,
+  criarEscola,
+  ehErroDeVinculo,
+  excluirEscola,
+  listarEscolas,
+  mensagemDeErroEscola,
+} from "../services/escolaService";
 import type { Escola, EscolaEntrada } from "../types";
 
-type Tela = "lista" | "formulario";
-
-function proximoId(escolas: Escola[]): number {
-  return escolas.reduce((maior, escola) => Math.max(maior, escola.idEscola), 0) + 1;
-}
-
-
-function agora(): string {
-  return new Date().toISOString();
-}
-
-
 function PaginaEscolas() {
-  const [escolas, setEscolas] = useColecaoPersistida<Escola>(
-    CHAVES_LOCALSTORAGE.escolas,
-    escolasMock
-  );
-  const [telaAtual, setTelaAtual] = useState<Tela>("lista");
+  const [escolas, setEscolas] = useState<Escola[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const [modalAberto, setModalAberto] = useState(false);
   const [escolaEmEdicao, setEscolaEmEdicao] = useState<Escola | null>(null);
 
-
   const [escolaParaExcluir, setEscolaParaExcluir] = useState<Escola | null>(null);
-
+  const [excluindo, setExcluindo] = useState(false);
 
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
+  // --- Carregamento ----------------------------------------------------------
+
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      setEscolas(await listarEscolas());
+    } catch (e) {
+      setErro(mensagemDeErroEscola(e, "Não foi possível carregar as escolas."));
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  // --- Formulário (criar / editar) ---------------------------------------------
+
   function abrirNovaEscola() {
     setEscolaEmEdicao(null);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function abrirEdicaoEscola(idEscola: number) {
     const escola = escolas.find((item) => item.idEscola === idEscola) ?? null;
+    if (!escola) return;
     setEscolaEmEdicao(escola);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function cancelarFormulario() {
     setEscolaEmEdicao(null);
-    setTelaAtual("lista");
+    setModalAberto(false);
   }
 
-  function adicionarEscola(dados: EscolaEntrada) {
-    const novaEscola: Escola = {
-      ...dados,
-      idEscola: proximoId(escolas),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setEscolas((atual) => [...atual, novaEscola]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Escola criada com sucesso!");
+  /** Lança em caso de falha: o formulário exibe o erro e permanece aberto. */
+  async function salvarFormulario(dados: EscolaEntrada): Promise<void> {
+    try {
+      if (escolaEmEdicao) {
+        const atualizada = await atualizarEscola(escolaEmEdicao.idEscola, dados);
+        setEscolas((atual) =>
+          atual.map((e) => (e.idEscola === atualizada.idEscola ? atualizada : e))
+        );
+        setMensagemSucesso("Escola atualizada com sucesso!");
+      } else {
+        const nova = await criarEscola(dados);
+        setEscolas((atual) => [...atual, nova]);
+        setMensagemSucesso("Escola criada com sucesso!");
+      }
+    } catch (e) {
+      throw new Error(mensagemDeErroEscola(e, "Não foi possível salvar a escola."));
+    }
+    cancelarFormulario();
   }
 
-  function atualizarEscola(idEscola: number, dados: EscolaEntrada) {
-    setEscolas((atual) =>
-      atual.map((escola) =>
-        escola.idEscola === idEscola
-          ? 
-            { ...escola, ...dados, atualizadoEm: agora() }
-          : escola
-      )
-    );
-    setEscolaEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Escola atualizada com sucesso!");
+  // --- Exclusão ------------------------------------------------------------------
+
+  function pedirConfirmacaoExclusao(idEscola: number) {
+    setEscolaParaExcluir(escolas.find((item) => item.idEscola === idEscola) ?? null);
   }
 
- 
-  function handleSalvarFormulario(dados: EscolaEntrada) {
-    if (escolaEmEdicao) {
-      atualizarEscola(escolaEmEdicao.idEscola, dados);
-    } else {
-      adicionarEscola(dados);
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setEscolaParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!escolaParaExcluir || excluindo) return;
+    const alvo = escolaParaExcluir;
+
+    setExcluindo(true);
+    setErro(null);
+    try {
+      await excluirEscola(alvo.idEscola);
+      // Atualiza a lista localmente: sem novo GET e sem recarregar a página.
+      setEscolas((atual) => atual.filter((e) => e.idEscola !== alvo.idEscola));
+      setMensagemSucesso("Deletado com sucesso!");
+    } catch (e) {
+      setErro(
+        ehErroDeVinculo(e)
+          ? `Não é possível excluir "${alvo.nomeEscola}": existem turmas, professores ou outros ` +
+              `vínculos ativos associados a esta escola. Remova ou transfira esses registros e tente novamente.`
+          : mensagemDeErroEscola(e, "Não foi possível excluir a escola.")
+      );
+    } finally {
+      setExcluindo(false);
+      setEscolaParaExcluir(null);
     }
   }
 
-
-  function pedirConfirmacaoExclusao(idEscola: number) {
-    const escola = escolas.find((item) => item.idEscola === idEscola) ?? null;
-    setEscolaParaExcluir(escola);
-  }
-
-  function confirmarExclusao() {
-    if (!escolaParaExcluir) return;
-    setEscolas((atual) =>
-      atual.filter((escola) => escola.idEscola !== escolaParaExcluir.idEscola)
-    );
-    setEscolaParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
-  }
-
-  function cancelarExclusao() {
-    setEscolaParaExcluir(null);
-  }
+  const fecharToast = useCallback(() => setMensagemSucesso(null), []);
 
   return (
     <>
-      {telaAtual === "lista" ? (
+      {!modalAberto ? (
         <ListaEscolas
           escolas={escolas}
+          carregando={carregando}
+          erro={erro}
+          aoDispensarErro={() => setErro(null)}
+          aoRecarregar={() => void carregar()}
           aoNovaEscola={abrirNovaEscola}
           aoEditarEscola={abrirEdicaoEscola}
           aoExcluirEscola={pedirConfirmacaoExclusao}
         />
       ) : (
         <FormularioEscola
+          key={escolaEmEdicao?.idEscola ?? "nova"}
           escolaEditando={escolaEmEdicao}
-          salvar={handleSalvarFormulario}
+          salvar={salvarFormulario}
           cancelar={cancelarFormulario}
         />
       )}
@@ -126,18 +146,14 @@ function PaginaEscolas() {
           titulo="Excluir escola"
           mensagem={`Tem certeza que deseja excluir "${escolaParaExcluir.nomeEscola}"? Essa ação não pode ser desfeita.`}
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
       {mensagemSucesso && (
-        <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
-        />
+        <Toast mensagem={mensagemSucesso} tipo="sucesso" aoFechar={fecharToast} />
       )}
     </>
   );

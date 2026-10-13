@@ -1,25 +1,25 @@
-import type { Aluno, StatusFrequencia } from "../../types";
+import type { Aluno, SituacaoFrequencia } from "../../types";
 import "./CardChamada.css";
 
 interface CardChamadaProps {
   aluno: Aluno;
-  status: StatusFrequencia;
+  situacao: SituacaoFrequencia;
   justificativa: string;
-  aoMudarStatus: (status: StatusFrequencia) => void;
+  aoMudarSituacao: (situacao: SituacaoFrequencia) => void;
   aoMudarJustificativa: (justificativa: string) => void;
 }
 
-const OPCOES_STATUS: { valor: StatusFrequencia; rotulo: string }[] = [
-  { valor: "Presente", rotulo: "Presente" },
-  { valor: "Ausente", rotulo: "Ausente" },
-  { valor: "Justificado", rotulo: "Justificado" },
+const OPCOES_SITUACAO: { valor: SituacaoFrequencia; rotulo: string; classeCss: string }[] = [
+  { valor: "Presente", rotulo: "Presente", classeCss: "presente" },
+  { valor: "Falta", rotulo: "Ausente", classeCss: "ausente" },
+  { valor: "FaltaJustificada", rotulo: "Justificado", classeCss: "justificado" },
 ];
 
 function CardChamada({
   aluno,
-  status,
+  situacao,
   justificativa,
-  aoMudarStatus,
+  aoMudarSituacao,
   aoMudarJustificativa,
 }: CardChamadaProps) {
   return (
@@ -31,15 +31,15 @@ function CardChamada({
         </div>
 
         <div className="card-chamada__opcoes" role="group" aria-label={`Presença de ${aluno.nomeAluno}`}>
-          {OPCOES_STATUS.map((opcao) => (
+          {OPCOES_SITUACAO.map((opcao) => (
             <button
               key={opcao.valor}
               type="button"
-              aria-pressed={status === opcao.valor}
-              className={`card-chamada__opcao card-chamada__opcao--${opcao.valor.toLowerCase()}${
-                status === opcao.valor ? " card-chamada__opcao--ativa" : ""
+              aria-pressed={situacao === opcao.valor}
+              className={`card-chamada__opcao card-chamada__opcao--${opcao.classeCss}${
+                situacao === opcao.valor ? " card-chamada__opcao--ativa" : ""
               }`}
-              onClick={() => aoMudarStatus(opcao.valor)}
+              onClick={() => aoMudarSituacao(opcao.valor)}
             >
               {opcao.rotulo}
             </button>
@@ -47,7 +47,7 @@ function CardChamada({
         </div>
       </div>
 
-      {status === "Justificado" && (
+      {situacao === "FaltaJustificada" && (
         <label className="card-chamada__justificativa">
           <span>Motivo da justificativa</span>
           <input

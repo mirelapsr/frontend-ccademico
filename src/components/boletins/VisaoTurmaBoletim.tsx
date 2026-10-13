@@ -43,16 +43,16 @@ function VisaoTurmaBoletim({
   const cartoes = useMemo(() => {
     if (turmaId === null) return [];
     const idsGradeDaTurma = new Set(
-      grades.filter((grade) => grade.turmaIdTurma === turmaId).map((grade) => grade.idGrade)
+      grades.filter((grade) => grade.turmaId === turmaId).map((grade) => grade.idGrade)
     );
 
     return matriculas
-      .filter((matricula) => matricula.turmaIdTurma === turmaId && matricula.situacao === "Ativa")
+      .filter((matricula) => matricula.turmaId === turmaId && matricula.situacao === "Ativa")
       .flatMap((matricula) => {
-        const aluno = alunos.find((item) => item.idAluno === matricula.alunoIdAluno);
+        const aluno = alunos.find((item) => item.idAluno === matricula.alunoId);
         if (!aluno) return [];
         const faltas = periodo
-          ? contarFaltas(frequencias, matricula.idMatricula, idsGradeDaTurma, periodo)
+          ? contarFaltas(frequencias, matricula.idMatricula, idsGradeDaTurma, periodo, aluno.idAluno)
           : 0;
         return [{ matricula, aluno, faltas }];
       })
@@ -70,7 +70,9 @@ function VisaoTurmaBoletim({
           <span>Turma</span>
           <select
             value={turmaId ?? ""}
-            onChange={(evento) => aoMudarTurma(evento.target.value === "" ? null : Number(evento.target.value))}
+            onChange={(evento) =>
+              aoMudarTurma(evento.target.value === "" ? null : Number(evento.target.value))
+            }
           >
             <option value="">Selecione a turma</option>
             {turmas.map((turma) => (
@@ -85,7 +87,9 @@ function VisaoTurmaBoletim({
           <span>Período letivo</span>
           <select
             value={periodoId ?? ""}
-            onChange={(evento) => aoMudarPeriodo(evento.target.value === "" ? null : Number(evento.target.value))}
+            onChange={(evento) =>
+              aoMudarPeriodo(evento.target.value === "" ? null : Number(evento.target.value))
+            }
           >
             <option value="">Selecione o período</option>
             {periodos.map((item) => (

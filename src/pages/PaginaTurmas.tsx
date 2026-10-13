@@ -1,111 +1,138 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ListaTurmas from "../components/turmas/ListaTurmas";
 import FormularioTurma from "../components/turmas/FormularioTurma";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
-import { escolasMock, turmasMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+import { listarEscolas } from "../services/escolaService";
+import {
+  atualizarTurma,
+  criarTurma,
+  ehErroDeVinculo,
+  excluirTurma,
+  listarTurmas,
+  mensagemDeErroTurma,
+} from "../services/turmaService";
 import type { Escola, Turma, TurmaEntrada } from "../types";
 
-type Tela = "lista" | "formulario";
-
-function proximoId(turmas: Turma[]): number {
-  return turmas.reduce((maior, turma) => Math.max(maior, turma.idTurma), 0) + 1;
-}
-
-function agora(): string {
-  return new Date().toISOString();
-}
-
 function PaginaTurmas() {
-  const [turmas, setTurmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
-  const [escolas] = useColecaoPersistida<Escola>(CHAVES_LOCALSTORAGE.escolas, escolasMock);
-  const [telaAtual, setTelaAtual] = useState<Tela>("lista");
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [escolas, setEscolas] = useState<Escola[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const [modalAberto, setModalAberto] = useState(false);
   const [turmaEmEdicao, setTurmaEmEdicao] = useState<Turma | null>(null);
 
   const [turmaParaExcluir, setTurmaParaExcluir] = useState<Turma | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const [listaTurmas, listaEscolas] = await Promise.all([listarTurmas(), listarEscolas()]);
+      setTurmas(listaTurmas);
+      setEscolas(listaEscolas);
+    } catch (e) {
+      setErro(mensagemDeErroTurma(e, "Não foi possível carregar as turmas."));
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
   function abrirNovaTurma() {
     setTurmaEmEdicao(null);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function abrirEdicaoTurma(idTurma: number) {
     const turma = turmas.find((item) => item.idTurma === idTurma) ?? null;
+    if (!turma) return;
     setTurmaEmEdicao(turma);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function cancelarFormulario() {
     setTurmaEmEdicao(null);
-    setTelaAtual("lista");
+    setModalAberto(false);
   }
 
-  function adicionarTurma(dados: TurmaEntrada) {
-    const novaTurma: Turma = {
-      ...dados,
-      idTurma: proximoId(turmas),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setTurmas((atual) => [...atual, novaTurma]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Turma criada com sucesso!");
-  }
-
-  function atualizarTurma(idTurma: number, dados: TurmaEntrada) {
-    setTurmas((atual) =>
-      atual.map((turma) =>
-        turma.idTurma === idTurma ? { ...turma, ...dados, atualizadoEm: agora() } : turma
-      )
-    );
-    setTurmaEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Turma atualizada com sucesso!");
-  }
-
-  function handleSalvarFormulario(dados: TurmaEntrada) {
-    if (turmaEmEdicao) {
-      atualizarTurma(turmaEmEdicao.idTurma, dados);
-    } else {
-      adicionarTurma(dados);
+  async function salvarFormulario(dados: TurmaEntrada): Promise<void> {
+    try {
+      if (turmaEmEdicao) {
+        const atualizada = await atualizarTurma(turmaEmEdicao.idTurma, dados);
+        setTurmas((atual) => atual.map((t) => (t.idTurma === atualizada.idTurma ? atualizada : t)));
+        setMensagemSucesso("Turma atualizada com sucesso!");
+      } else {
+        const nova = await criarTurma(dados);
+        setTurmas((atual) => [...atual, nova]);
+        setMensagemSucesso("Turma criada com sucesso!");
+      }
+    } catch (e) {
+      throw new Error(mensagemDeErroTurma(e, "Não foi possível salvar a turma."));
     }
+    cancelarFormulario();
   }
 
   function pedirConfirmacaoExclusao(idTurma: number) {
-    const turma = turmas.find((item) => item.idTurma === idTurma) ?? null;
-    setTurmaParaExcluir(turma);
+    setTurmaParaExcluir(turmas.find((item) => item.idTurma === idTurma) ?? null);
   }
 
-  function confirmarExclusao() {
-    if (!turmaParaExcluir) return;
-    setTurmas((atual) => atual.filter((turma) => turma.idTurma !== turmaParaExcluir.idTurma));
-    setTurmaParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setTurmaParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!turmaParaExcluir || excluindo) return;
+    const alvo = turmaParaExcluir;
+
+    setExcluindo(true);
+    setErro(null);
+    try {
+      await excluirTurma(alvo.idTurma);
+      setTurmas((atual) => atual.filter((t) => t.idTurma !== alvo.idTurma));
+      setMensagemSucesso("Deletado com sucesso!");
+    } catch (e) {
+      setErro(
+        ehErroDeVinculo(e)
+          ? `Não é possível excluir "${alvo.nomeTurma}": a turma possui matrículas ou grades ` +
+              `curriculares vinculadas. Remova esses vínculos e tente novamente.`
+          : mensagemDeErroTurma(e, "Não foi possível excluir a turma.")
+      );
+    } finally {
+      setExcluindo(false);
+      setTurmaParaExcluir(null);
+    }
   }
 
-  function cancelarExclusao() {
-    setTurmaParaExcluir(null);
-  }
+  const fecharToast = useCallback(() => setMensagemSucesso(null), []);
 
   return (
     <>
-      {telaAtual === "lista" ? (
+      {!modalAberto ? (
         <ListaTurmas
           turmas={turmas}
           escolas={escolas}
+          carregando={carregando}
+          erro={erro}
+          aoDispensarErro={() => setErro(null)}
+          aoRecarregar={() => void carregar()}
           aoNovaTurma={abrirNovaTurma}
           aoEditarTurma={abrirEdicaoTurma}
           aoExcluirTurma={pedirConfirmacaoExclusao}
         />
       ) : (
         <FormularioTurma
+          key={turmaEmEdicao?.idTurma ?? "nova"}
           turmaEditando={turmaEmEdicao}
           escolas={escolas}
-          salvar={handleSalvarFormulario}
+          salvar={salvarFormulario}
           cancelar={cancelarFormulario}
         />
       )}
@@ -115,18 +142,14 @@ function PaginaTurmas() {
           titulo="Excluir turma"
           mensagem={`Tem certeza que deseja excluir "${turmaParaExcluir.nomeTurma}"? Essa ação não pode ser desfeita.`}
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
       {mensagemSucesso && (
-        <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
-        />
+        <Toast mensagem={mensagemSucesso} tipo="sucesso" aoFechar={fecharToast} />
       )}
     </>
   );

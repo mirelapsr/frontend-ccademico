@@ -95,3 +95,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+.formulario-professor__acoes button:disabled,
+.formulario-professor__campo input:disabled,
+.formulario-professor__campo select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

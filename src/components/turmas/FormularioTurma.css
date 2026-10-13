@@ -95,3 +95,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+.formulario-turma__acoes button:disabled,
+.formulario-turma__campo input:disabled,
+.formulario-turma__campo select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -1,9 +1,7 @@
-
-
 .formulario-responsavel {
   background: var(--superficie);
   border: 1px solid var(--borda);
-  border-radius: 2px;
+  border-radius: 8px;
   max-width: 640px;
   margin: 0 auto;
 }
@@ -43,10 +41,11 @@
   font-size: 0.95rem;
   color: var(--texto);
   padding: 9px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--borda);
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: var(--superficie);
   cursor: text;
+  transition: border-color 0.15s ease;
 }
 
 .formulario-responsavel__campo select {
@@ -59,15 +58,20 @@
   outline-offset: 1px;
 }
 
+.formulario-responsavel__campo input[aria-invalid="true"] {
+  border-color: var(--perigo);
+}
+
 .formulario-responsavel__erro {
   grid-column: 1 / -1;
   margin: 0;
   padding: 10px 12px;
   border: 1px solid var(--perigo);
-  border-radius: 2px;
-  color: var(--perigo);
+  border-radius: 6px;
+  color: var(--perigo-escuro);
   font-size: 0.85rem;
   background: #fbeae9;
+  line-height: 1.4;
 }
 
 .formulario-responsavel__acoes {
@@ -83,11 +87,39 @@
   background: transparent;
   color: var(--texto-suave);
   border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.formulario-responsavel__botao-cancelar:hover {
+.formulario-responsavel__botao-cancelar:hover:not(:disabled) {
   background: var(--fundo);
   color: var(--texto);
+}
+
+.formulario-responsavel__botao-salvar {
+  background: var(--azul-acao);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.formulario-responsavel__botao-salvar:hover:not(:disabled) {
+  background: var(--azul-acao-escuro);
+}
+
+.formulario-responsavel button:disabled,
+.formulario-responsavel input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 640px) {

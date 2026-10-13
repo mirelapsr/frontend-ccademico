@@ -1,116 +1,141 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ListaPeriodos from "../components/periodos/ListaPeriodos";
 import FormularioPeriodo from "../components/periodos/FormularioPeriodo";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
-import { periodosMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+import {
+  atualizarPeriodo,
+  criarPeriodo,
+  ehErroDeVinculo,
+  excluirPeriodo,
+  listarPeriodos,
+  mensagemDeErroPeriodo,
+} from "../services/periodoService";
 import type { Periodo, PeriodoEntrada } from "../types";
 
-type Tela = "lista" | "formulario";
-
-function proximoId(periodos: Periodo[]): number {
-  return periodos.reduce((maior, periodo) => Math.max(maior, periodo.idPeriodo), 0) + 1;
-}
-
-function agora(): string {
-  return new Date().toISOString();
-}
-
 function PaginaPeriodos() {
-  const [periodos, setPeriodos] = useColecaoPersistida<Periodo>(
-    CHAVES_LOCALSTORAGE.periodos,
-    periodosMock
-  );
+  const [periodos, setPeriodos] = useState<Periodo[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const [telaAtual, setTelaAtual] = useState<Tela>("lista");
+  const [modalAberto, setModalAberto] = useState(false);
   const [periodoEmEdicao, setPeriodoEmEdicao] = useState<Periodo | null>(null);
 
   const [periodoParaExcluir, setPeriodoParaExcluir] = useState<Periodo | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
+  // --- Carregamento ----------------------------------------------------------
+
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      setPeriodos(await listarPeriodos());
+    } catch (e) {
+      setErro(mensagemDeErroPeriodo(e, "Não foi possível carregar os períodos."));
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  // --- Formulário (criar / editar) ---------------------------------------------
+
   function abrirNovoPeriodo() {
     setPeriodoEmEdicao(null);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function abrirEdicaoPeriodo(idPeriodo: number) {
     const periodo = periodos.find((item) => item.idPeriodo === idPeriodo) ?? null;
+    if (!periodo) return;
     setPeriodoEmEdicao(periodo);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function cancelarFormulario() {
     setPeriodoEmEdicao(null);
-    setTelaAtual("lista");
+    setModalAberto(false);
   }
 
-  function adicionarPeriodo(dados: PeriodoEntrada) {
-    const novoPeriodo: Periodo = {
-      ...dados,
-      idPeriodo: proximoId(periodos),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setPeriodos((atual) => [...atual, novoPeriodo]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Período criado com sucesso!");
+  async function salvarFormulario(dados: PeriodoEntrada): Promise<void> {
+    try {
+      if (periodoEmEdicao) {
+        const atualizado = await atualizarPeriodo(periodoEmEdicao.idPeriodo, dados);
+        setPeriodos((atual) =>
+          atual.map((p) => (p.idPeriodo === atualizado.idPeriodo ? atualizado : p))
+        );
+        setMensagemSucesso("Período atualizado com sucesso!");
+      } else {
+        const novo = await criarPeriodo(dados);
+        setPeriodos((atual) => [...atual, novo]);
+        setMensagemSucesso("Período criado com sucesso!");
+      }
+    } catch (e) {
+      throw new Error(mensagemDeErroPeriodo(e, "Não foi possível salvar o período."));
+    }
+    cancelarFormulario();
   }
 
-  function atualizarPeriodo(idPeriodo: number, dados: PeriodoEntrada) {
-    setPeriodos((atual) =>
-      atual.map((periodo) =>
-        periodo.idPeriodo === idPeriodo
-          ? { ...periodo, ...dados, atualizadoEm: agora() }
-          : periodo
-      )
-    );
-    setPeriodoEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Período atualizado com sucesso!");
+  // --- Exclusão ------------------------------------------------------------------
+
+  function pedirConfirmacaoExclusao(idPeriodo: number) {
+    setPeriodoParaExcluir(periodos.find((item) => item.idPeriodo === idPeriodo) ?? null);
   }
 
-  function handleSalvarFormulario(dados: PeriodoEntrada) {
-    if (periodoEmEdicao) {
-      atualizarPeriodo(periodoEmEdicao.idPeriodo, dados);
-    } else {
-      adicionarPeriodo(dados);
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setPeriodoParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!periodoParaExcluir || excluindo) return;
+    const alvo = periodoParaExcluir;
+
+    setExcluindo(true);
+    setErro(null);
+    try {
+      await excluirPeriodo(alvo.idPeriodo);
+      setPeriodos((atual) => atual.filter((p) => p.idPeriodo !== alvo.idPeriodo));
+      setMensagemSucesso("Deletado com sucesso!");
+    } catch (e) {
+      setErro(
+        ehErroDeVinculo(e)
+          ? `Não é possível excluir "${alvo.nomePeriodo}": existem avaliações ou boletins ` +
+              `vinculados a este período. Remova esses registros e tente novamente.`
+          : mensagemDeErroPeriodo(e, "Não foi possível excluir o período.")
+      );
+    } finally {
+      setExcluindo(false);
+      setPeriodoParaExcluir(null);
     }
   }
 
-  function pedirConfirmacaoExclusao(idPeriodo: number) {
-    const periodo = periodos.find((item) => item.idPeriodo === idPeriodo) ?? null;
-    setPeriodoParaExcluir(periodo);
-  }
-
-  function confirmarExclusao() {
-    if (!periodoParaExcluir) return;
-    setPeriodos((atual) =>
-      atual.filter((periodo) => periodo.idPeriodo !== periodoParaExcluir.idPeriodo)
-    );
-    setPeriodoParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
-  }
-
-  function cancelarExclusao() {
-    setPeriodoParaExcluir(null);
-  }
+  const fecharToast = useCallback(() => setMensagemSucesso(null), []);
 
   return (
     <>
-      {telaAtual === "lista" ? (
+      {!modalAberto ? (
         <ListaPeriodos
           periodos={periodos}
+          carregando={carregando}
+          erro={erro}
+          aoDispensarErro={() => setErro(null)}
+          aoRecarregar={() => void carregar()}
           aoNovoPeriodo={abrirNovoPeriodo}
           aoEditarPeriodo={abrirEdicaoPeriodo}
           aoExcluirPeriodo={pedirConfirmacaoExclusao}
         />
       ) : (
         <FormularioPeriodo
+          // `key` reinicia o estado interno ao alternar entre períodos.
+          key={periodoEmEdicao?.idPeriodo ?? "novo"}
           periodoEditando={periodoEmEdicao}
-          salvar={handleSalvarFormulario}
+          salvar={salvarFormulario}
           cancelar={cancelarFormulario}
         />
       )}
@@ -120,18 +145,14 @@ function PaginaPeriodos() {
           titulo="Excluir período"
           mensagem={`Tem certeza que deseja excluir "${periodoParaExcluir.nomePeriodo}"? Essa ação não pode ser desfeita.`}
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
       {mensagemSucesso && (
-        <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
-        />
+        <Toast mensagem={mensagemSucesso} tipo="sucesso" aoFechar={fecharToast} />
       )}
     </>
   );

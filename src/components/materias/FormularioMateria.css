@@ -88,3 +88,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.formulario-materia__acoes button:disabled,
+.formulario-materia__campo input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

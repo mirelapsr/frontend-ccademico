@@ -1,45 +1,51 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import ListaAlunos from "../components/alunos/ListaAlunos";
 import FormularioAluno from "../components/alunos/FormularioAluno";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
-import Toast from "../components/ui/Toast";
-import { alunosMock, matriculasMock, turmasMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+import Toast, { type TipoToast } from "../components/ui/Toast";
+import { useLista } from "../hooks/useLista";
+import {
+  atualizarAluno,
+  criarAluno,
+  ehErroDeVinculo,
+  excluirAluno,
+  mensagemDeErroAluno,
+} from "../services/alunoService";
 import type { Aluno, AlunoEntrada, Matricula, Turma } from "../types";
 
 type Tela = "lista" | "formulario";
 
-function proximoId(alunos: Aluno[]): number {
-  return alunos.reduce((maior, aluno) => Math.max(maior, aluno.idAluno), 0) + 1;
-}
-
-function agora(): string {
-  return new Date().toISOString();
+interface Feedback {
+  tipo: TipoToast;
+  mensagem: string;
 }
 
 function PaginaAlunos() {
-  const [alunos, setAlunos] = useColecaoPersistida<Aluno>(CHAVES_LOCALSTORAGE.alunos, alunosMock);
-  const [matriculas] = useColecaoPersistida<Matricula>(CHAVES_LOCALSTORAGE.matriculas, matriculasMock);
-  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
+  const { dados: alunos, carregando, erro, recarregar: recarregarAlunos } = useLista<Aluno>("/alunos");
+  const { dados: matriculas, erro: erroMatriculas, recarregar: recarregarMatriculas } =
+    useLista<Matricula>("/matriculas");
+  const { dados: turmas, erro: erroTurmas, recarregar: recarregarTurmas } = useLista<Turma>("/turmas");
+
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [alunoEmEdicao, setAlunoEmEdicao] = useState<Aluno | null>(null);
-
   const [alunoParaExcluir, setAlunoParaExcluir] = useState<Aluno | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const recarregarTudo = useCallback(async () => {
+    await Promise.all([recarregarAlunos(), recarregarMatriculas(), recarregarTurmas()]);
+  }, [recarregarAlunos, recarregarMatriculas, recarregarTurmas]);
 
   // Join no frontend: para cada aluno, acha a matrícula ativa e, a partir
-  // dela, a turma correspondente — sem tocar em backend/schema. Resultado
-  // indexado por idAluno para consulta O(1) ao montar os cards.
+  // dela, a turma correspondente. Resultado indexado por idAluno.
   const nomeTurmaPorAluno = useMemo(() => {
     const mapa: Record<number, string | undefined> = {};
     for (const aluno of alunos) {
       const matriculaAtiva = matriculas.find(
-        (matricula) => matricula.alunoIdAluno === aluno.idAluno && matricula.situacao === "Ativa"
+        (matricula) => matricula.alunoId === aluno.idAluno && matricula.situacao === "Ativa"
       );
       const turma = matriculaAtiva
-        ? turmas.find((item) => item.idTurma === matriculaAtiva.turmaIdTurma)
+        ? turmas.find((item) => item.idTurma === matriculaAtiva.turmaId)
         : undefined;
       mapa[aluno.idAluno] = turma ? `${turma.nomeTurma} (${turma.turno})` : undefined;
     }
@@ -62,52 +68,55 @@ function PaginaAlunos() {
     setTelaAtual("lista");
   }
 
-  function adicionarAluno(dados: AlunoEntrada) {
-    const novoAluno: Aluno = {
-      ...dados,
-      idAluno: proximoId(alunos),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setAlunos((atual) => [...atual, novoAluno]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Aluno criado com sucesso!");
-  }
-
-  function atualizarAluno(idAluno: number, dados: AlunoEntrada) {
-    setAlunos((atual) =>
-      atual.map((aluno) =>
-        aluno.idAluno === idAluno ? { ...aluno, ...dados, atualizadoEm: agora() } : aluno
-      )
-    );
-    setAlunoEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Aluno atualizado com sucesso!");
-  }
-
-  function handleSalvarFormulario(dados: AlunoEntrada) {
-    if (alunoEmEdicao) {
-      atualizarAluno(alunoEmEdicao.idAluno, dados);
-    } else {
-      adicionarAluno(dados);
+  async function handleSalvarFormulario(dados: AlunoEntrada): Promise<void> {
+    try {
+      if (alunoEmEdicao) {
+        await atualizarAluno(alunoEmEdicao.idAluno, dados);
+      } else {
+        await criarAluno(dados);
+      }
+    } catch (e: unknown) {
+      throw new Error(mensagemDeErroAluno(e, "Não foi possível salvar o aluno."));
     }
+    setFeedback({
+      tipo: "sucesso",
+      mensagem: alunoEmEdicao ? "Aluno atualizado com sucesso!" : "Aluno criado com sucesso!",
+    });
+    cancelarFormulario();
+    await recarregarAlunos();
   }
 
   function pedirConfirmacaoExclusao(idAluno: number) {
-    const aluno = alunos.find((item) => item.idAluno === idAluno) ?? null;
-    setAlunoParaExcluir(aluno);
+    setAlunoParaExcluir(alunos.find((item) => item.idAluno === idAluno) ?? null);
   }
 
-  function confirmarExclusao() {
-    if (!alunoParaExcluir) return;
-    setAlunos((atual) => atual.filter((aluno) => aluno.idAluno !== alunoParaExcluir.idAluno));
-    setAlunoParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setAlunoParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!alunoParaExcluir || excluindo) return;
+    const alvo = alunoParaExcluir;
+
+    setExcluindo(true);
+    try {
+      await excluirAluno(alvo.idAluno);
+      setFeedback({ tipo: "sucesso", mensagem: "Deletado com sucesso!" });
+      await recarregarAlunos();
+    } catch (e: unknown) {
+      setFeedback({
+        tipo: "erro",
+        mensagem: ehErroDeVinculo(e)
+          ? `Não é possível excluir "${alvo.nomeAluno}": o aluno possui matrículas, notas, frequências, boletins ou boletos vinculados.`
+          : mensagemDeErroAluno(e, "Não foi possível excluir o aluno."),
+      });
+    } finally {
+      setExcluindo(false);
+      setAlunoParaExcluir(null);
+    }
   }
 
-  function cancelarExclusao() {
-    setAlunoParaExcluir(null);
-  }
+  const fecharFeedback = useCallback(() => setFeedback(null), []);
 
   return (
     <>
@@ -115,12 +124,16 @@ function PaginaAlunos() {
         <ListaAlunos
           alunos={alunos}
           nomeTurmaPorAluno={nomeTurmaPorAluno}
+          carregando={carregando}
+          erro={erro ?? erroMatriculas ?? erroTurmas}
+          aoRecarregar={() => void recarregarTudo()}
           aoNovoAluno={abrirNovoAluno}
           aoEditarAluno={abrirEdicaoAluno}
           aoExcluirAluno={pedirConfirmacaoExclusao}
         />
       ) : (
         <FormularioAluno
+          key={alunoEmEdicao?.idAluno ?? "novo"}
           alunoEditando={alunoEmEdicao}
           salvar={handleSalvarFormulario}
           cancelar={cancelarFormulario}
@@ -132,17 +145,18 @@ function PaginaAlunos() {
           titulo="Excluir aluno"
           mensagem={`Tem certeza que deseja excluir "${alunoParaExcluir.nomeAluno}"? Essa ação não pode ser desfeita.`}
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
-      {mensagemSucesso && (
+      {feedback && (
         <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
+          mensagem={feedback.mensagem}
+          tipo={feedback.tipo}
+          duracaoMs={feedback.tipo === "erro" ? 6000 : undefined}
+          aoFechar={fecharFeedback}
         />
       )}
     </>

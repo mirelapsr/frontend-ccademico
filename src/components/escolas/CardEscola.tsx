@@ -80,14 +80,19 @@ function CardEscola({ escola, aoEditar, aoExcluir }: CardEscolaProps) {
             <span className="card-escola__selo">
               INEP: <ValorOuVazio valor={escola.codigoInep} />
             </span>
+            <span className="card-escola__selo">
+              Rede: <ValorOuVazio valor={escola.redeEnsino} />
+            </span>
           </div>
         </div>
       </div>
 
-      <footer className="card-escola__rodape">
-        <span>Cadastrada em: {formatarData(escola.criadoEm)}</span>
-        <span>Atualizada em: {formatarData(escola.atualizadoEm)}</span>
-      </footer>
+      {(escola.criadoEm || escola.atualizadoEm) && (
+        <footer className="card-escola__rodape">
+          {escola.criadoEm && <span>Cadastrada em: {formatarData(escola.criadoEm)}</span>}
+          {escola.atualizadoEm && <span>Atualizada em: {formatarData(escola.atualizadoEm)}</span>}
+        </footer>
+      )}
     </article>
   );
 }

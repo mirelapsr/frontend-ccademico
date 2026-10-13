@@ -1,9 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type {
   Frequencia,
   FrequenciaEntrada,
-  StatusFrequencia,
-  Matricula,
+  SituacaoFrequencia,
   Aluno,
   GradeCurricular,
   Materia,
@@ -13,14 +12,11 @@ import "./FormularioFrequencia.css";
 
 interface FormularioFrequenciaProps {
   frequenciaEditando?: Frequencia | null;
-  /** Matrículas cadastradas, para o <select> de aluno. */
-  matriculas: Matricula[];
   alunos: Aluno[];
-  /** Grades curriculares cadastradas, para o <select> de disciplina. */
   grades: GradeCurricular[];
   materias: Materia[];
   turmas: Turma[];
-  salvar: (dados: FrequenciaEntrada) => void;
+  salvar: (dados: FrequenciaEntrada) => Promise<void> | void;
   cancelar: () => void;
 }
 
@@ -28,20 +24,14 @@ function hoje(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function rotuloMatricula(matricula: Matricula, alunos: Aluno[]): string {
-  const aluno = alunos.find((item) => item.idAluno === matricula.alunoIdAluno);
-  return aluno ? `${aluno.nomeAluno} — Matrícula ${aluno.numeroMatricula}` : `Matrícula ${matricula.idMatricula}`;
-}
-
 function rotuloGrade(grade: GradeCurricular, materias: Materia[], turmas: Turma[]): string {
-  const materia = materias.find((item) => item.idMateria === grade.materiaIdMateria);
-  const turma = turmas.find((item) => item.idTurma === grade.turmaIdTurma);
+  const materia = materias.find((item) => item.idMateria === grade.materiaId);
+  const turma = turmas.find((item) => item.idTurma === grade.turmaId);
   return `${materia?.nomeMateria ?? "Matéria"} — ${turma?.nomeTurma ?? "Turma"}`;
 }
 
 function FormularioFrequencia({
   frequenciaEditando,
-  matriculas,
   alunos,
   grades,
   materias,
@@ -49,38 +39,60 @@ function FormularioFrequencia({
   salvar,
   cancelar,
 }: FormularioFrequenciaProps) {
-  const [matriculaIdMatricula, setMatriculaIdMatricula] = useState(
-    frequenciaEditando?.matriculaIdMatricula ?? matriculas[0]?.idMatricula ?? 0
+  const [alunoId, setAlunoId] = useState<number>(
+    frequenciaEditando?.alunoId ?? alunos[0]?.idAluno ?? 0
   );
-  const [gradeIdGrade, setGradeIdGrade] = useState(
-    frequenciaEditando?.gradeIdGrade ?? grades[0]?.idGrade ?? 0
+  const [gradeId, setGradeId] = useState<number>(
+    frequenciaEditando?.gradeId ?? grades[0]?.idGrade ?? 0
   );
-  const [dataAula, setDataAula] = useState(frequenciaEditando?.dataAula ?? hoje());
-  const [status, setStatus] = useState<StatusFrequencia>(frequenciaEditando?.status ?? "Presente");
-  const [justificativa, setJustificativa] = useState(frequenciaEditando?.justificativa ?? "");
+  const [dataFrequencia, setDataFrequencia] = useState(
+    frequenciaEditando?.dataFrequencia ?? hoje()
+  );
+  const [situacao, setSituacao] = useState<SituacaoFrequencia>(
+    frequenciaEditando?.situacao ?? "Presente"
+  );
+  const [justificativa, setJustificativa] = useState(
+    frequenciaEditando?.justificativa ?? ""
+  );
   const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const emEnvioRef = useRef(false);
 
-  function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (emEnvioRef.current || enviando) return;
 
-    if (!matriculaIdMatricula || !gradeIdGrade || !dataAula) {
-      setErro("Matrícula, disciplina e data da aula são obrigatórios.");
+    if (!alunoId || !gradeId || !dataFrequencia) {
+      setErro("Aluno, disciplina e data da aula são obrigatórios.");
       return;
     }
 
-    if (status === "Justificado" && !justificativa.trim()) {
+    if (situacao === "FaltaJustificada" && !justificativa.trim()) {
       setErro("Informe a justificativa para uma falta justificada.");
       return;
     }
 
+    emEnvioRef.current = true;
+    setEnviando(true);
     setErro(null);
-    salvar({
-      matriculaIdMatricula: Number(matriculaIdMatricula),
-      gradeIdGrade: Number(gradeIdGrade),
-      dataAula,
-      status,
-      justificativa: status === "Justificado" ? justificativa.trim() : justificativa.trim() || undefined,
-    });
+
+    try {
+      await salvar({
+        alunoId: Number(alunoId),
+        gradeId: Number(gradeId),
+        dataFrequencia,
+        situacao,
+        justificativa:
+          situacao === "FaltaJustificada"
+            ? justificativa.trim()
+            : justificativa.trim() || null,
+      });
+    } catch (e: unknown) {
+      setErro(e instanceof Error ? e.message : "Não foi possível registrar a frequência.");
+    } finally {
+      emEnvioRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (
@@ -91,15 +103,16 @@ function FormularioFrequencia({
 
       <form className="formulario-frequencia__form" onSubmit={handleSubmit} noValidate>
         <label className="formulario-frequencia__campo formulario-frequencia__campo--largo">
-          <span>Aluno (Matrícula) *</span>
+          <span>Aluno *</span>
           <select
-            value={matriculaIdMatricula}
-            onChange={(evento) => setMatriculaIdMatricula(Number(evento.target.value))}
+            value={alunoId}
+            onChange={(evento) => setAlunoId(Number(evento.target.value))}
+            disabled={enviando}
           >
-            {matriculas.length === 0 && <option value={0}>Nenhuma matrícula cadastrada</option>}
-            {matriculas.map((matricula) => (
-              <option key={matricula.idMatricula} value={matricula.idMatricula}>
-                {rotuloMatricula(matricula, alunos)}
+            {alunos.length === 0 && <option value={0}>Nenhum aluno cadastrado</option>}
+            {alunos.map((aluno) => (
+              <option key={aluno.idAluno} value={aluno.idAluno}>
+                {aluno.nomeAluno} — Matrícula {aluno.numeroMatricula}
               </option>
             ))}
           </select>
@@ -108,8 +121,9 @@ function FormularioFrequencia({
         <label className="formulario-frequencia__campo formulario-frequencia__campo--largo">
           <span>Disciplina (Grade Curricular) *</span>
           <select
-            value={gradeIdGrade}
-            onChange={(evento) => setGradeIdGrade(Number(evento.target.value))}
+            value={gradeId}
+            onChange={(evento) => setGradeId(Number(evento.target.value))}
+            disabled={enviando}
           >
             {grades.length === 0 && <option value={0}>Nenhuma grade cadastrada</option>}
             {grades.map((grade) => (
@@ -124,30 +138,33 @@ function FormularioFrequencia({
           <span>Data da aula *</span>
           <input
             type="date"
-            value={dataAula}
-            onChange={(evento) => setDataAula(evento.target.value)}
+            value={dataFrequencia}
+            onChange={(evento) => setDataFrequencia(evento.target.value)}
+            disabled={enviando}
           />
         </label>
 
         <label className="formulario-frequencia__campo">
-          <span>Status *</span>
+          <span>Situação *</span>
           <select
-            value={status}
-            onChange={(evento) => setStatus(evento.target.value as StatusFrequencia)}
+            value={situacao}
+            onChange={(evento) => setSituacao(evento.target.value as SituacaoFrequencia)}
+            disabled={enviando}
           >
             <option value="Presente">Presente</option>
-            <option value="Ausente">Ausente</option>
-            <option value="Justificado">Justificado</option>
+            <option value="Falta">Ausente</option>
+            <option value="FaltaJustificada">Justificado</option>
           </select>
         </label>
 
         <label className="formulario-frequencia__campo formulario-frequencia__campo--largo">
-          <span>Justificativa{status === "Justificado" ? " *" : ""}</span>
+          <span>Justificativa{situacao === "FaltaJustificada" ? " *" : ""}</span>
           <textarea
             value={justificativa}
             onChange={(evento) => setJustificativa(evento.target.value)}
+            disabled={enviando}
             placeholder={
-              status === "Justificado"
+              situacao === "FaltaJustificada"
                 ? "Descreva o motivo da falta justificada..."
                 : "Opcional"
             }
@@ -166,11 +183,12 @@ function FormularioFrequencia({
             type="button"
             className="formulario-frequencia__botao-cancelar"
             onClick={cancelar}
+            disabled={enviando}
           >
             Cancelar
           </button>
-          <button type="submit" className="formulario-frequencia__botao-salvar">
-            {frequenciaEditando ? "Salvar alterações" : "Registrar frequência"}
+          <button type="submit" className="formulario-frequencia__botao-salvar" disabled={enviando}>
+            {enviando ? "Salvando..." : frequenciaEditando ? "Salvar alterações" : "Registrar frequência"}
           </button>
         </div>
       </form>

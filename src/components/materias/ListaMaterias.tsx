@@ -8,6 +8,10 @@ interface ListaMateriasProps {
   aoNovaMateria: () => void;
   aoEditarMateria: (idMateria: number) => void;
   aoExcluirMateria: (idMateria: number) => void;
+  carregando?: boolean;
+  erro?: string | null;
+  aoDispensarErro?: () => void;
+  aoRecarregar?: () => void;
 }
 
 function ListaMaterias({
@@ -15,6 +19,10 @@ function ListaMaterias({
   aoNovaMateria,
   aoEditarMateria,
   aoExcluirMateria,
+  carregando = false,
+  erro = null,
+  aoDispensarErro,
+  aoRecarregar,
 }: ListaMateriasProps) {
   const [busca, setBusca] = useState("");
 
@@ -35,6 +43,24 @@ function ListaMaterias({
         </button>
       </header>
 
+      {erro && (
+        <div className="lista-materias__erro" role="alert">
+          <p>{erro}</p>
+          <div className="lista-materias__erro-acoes">
+            {aoRecarregar && (
+              <button type="button" onClick={aoRecarregar} disabled={carregando}>
+                Recarregar
+              </button>
+            )}
+            {aoDispensarErro && (
+              <button type="button" onClick={aoDispensarErro} aria-label="Dispensar aviso">
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="lista-materias__filtros">
         <label className="lista-materias__busca">
           <IconeBusca />
@@ -50,9 +76,11 @@ function ListaMaterias({
 
       {materiasFiltradas.length === 0 ? (
         <p className="lista-materias__vazio-geral">
-          {materias.length === 0
-            ? "Nenhuma matéria cadastrada ainda."
-            : "Nenhuma matéria encontrada para essa busca."}
+          {carregando
+            ? "Carregando matérias..."
+            : materias.length === 0
+              ? "Nenhuma matéria cadastrada ainda."
+              : "Nenhuma matéria encontrada para essa busca."}
         </p>
       ) : (
         <div className="lista-materias__grade">

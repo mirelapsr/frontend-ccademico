@@ -133,3 +133,13 @@
     padding: 16px;
   }
 }
+
+.dashboard__erro {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--perigo);
+  border-radius: 2px;
+  color: var(--perigo);
+  font-size: 0.85rem;
+  background: #fbeae9;
+}

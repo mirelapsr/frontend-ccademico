@@ -15,9 +15,11 @@ function formatarData(iso: string | null | undefined): string {
   return new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("pt-BR");
 }
 
-function formatarPeso(peso: number | null | undefined): string {
+function formatarPeso(peso: number | string | null | undefined): string {
   if (peso === null || peso === undefined) return "1,00";
-  return peso.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const num = typeof peso === "string" ? Number(peso) : peso;
+  if (Number.isNaN(num)) return "1,00";
+  return num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatarMedia(media: number | null): string {
@@ -28,6 +30,8 @@ function formatarMedia(media: number | null): string {
 const RUTULOS_TIPO: Record<TipoAvaliacao, string> = {
   Prova: "Prova",
   Trabalho: "Trabalho",
+  Projeto: "Projeto",
+  Recuperacao: "Recuperação",
   Seminario: "Seminário",
   Participacao: "Participação",
   Outro: "Outro",

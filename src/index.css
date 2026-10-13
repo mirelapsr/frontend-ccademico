@@ -51,8 +51,7 @@ h3 {
   margin: 0;
 }
 
-/* Cor institucional: todo botão de ação/salvar/cadastrar nasce azul.
-   O vermelho (--perigo) é aplicado só explicitamente nos botões de lixeira. */
+
 button {
   font-family: var(--fonte-corpo);
   background: var(--azul-acao);

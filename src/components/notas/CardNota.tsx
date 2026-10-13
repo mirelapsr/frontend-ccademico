@@ -1,10 +1,8 @@
-import type { Nota, Matricula, Aluno, Avaliacao, GradeCurricular, Materia, Turma } from "../../types";
+import type { Nota, Aluno, Avaliacao, GradeCurricular, Materia, Turma } from "../../types";
 import "./CardNota.css";
 
 interface CardNotaProps {
   nota: Nota;
-  /** Listas completas — o card resolve matrícula → aluno, e avaliação → grade → matéria/turma pelas FKs. */
-  matriculas: Matricula[];
   alunos: Aluno[];
   avaliacoes: Avaliacao[];
   grades: GradeCurricular[];
@@ -18,13 +16,15 @@ function formatarData(iso: string): string {
   return new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("pt-BR");
 }
 
-function formatarNota(valor: number): string {
-  return valor.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function formatarNota(valor: number | string): string {
+  const num = typeof valor === "string" ? Number(valor) : valor;
+  return num.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
-function classeFaixaNota(valor: number): string {
-  if (valor >= 7) return "card-nota__selo-faixa--boa";
-  if (valor >= 5) return "card-nota__selo-faixa--media";
+function classeFaixaNota(valor: number | string): string {
+  const num = typeof valor === "string" ? Number(valor) : valor;
+  if (num >= 7) return "card-nota__selo-faixa--boa";
+  if (num >= 5) return "card-nota__selo-faixa--media";
   return "card-nota__selo-faixa--baixa";
 }
 
@@ -35,7 +35,6 @@ function ValorOuVazio({ valor }: { valor: string | null | undefined }) {
 
 function CardNota({
   nota,
-  matriculas,
   alunos,
   avaliacoes,
   grades,
@@ -44,12 +43,11 @@ function CardNota({
   aoEditar,
   aoExcluir,
 }: CardNotaProps) {
-  const matricula = matriculas.find((item) => item.idMatricula === nota.matriculaIdMatricula);
-  const aluno = matricula ? alunos.find((item) => item.idAluno === matricula.alunoIdAluno) : undefined;
-  const avaliacao = avaliacoes.find((item) => item.idAvaliacao === nota.avaliacaoIdAvaliacao);
-  const grade = avaliacao ? grades.find((item) => item.idGrade === avaliacao.gradeIdGrade) : undefined;
-  const materia = grade ? materias.find((item) => item.idMateria === grade.materiaIdMateria) : undefined;
-  const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaIdTurma) : undefined;
+  const aluno = alunos.find((item) => item.idAluno === nota.alunoId);
+  const avaliacao = avaliacoes.find((item) => item.idAvaliacao === nota.avaliacaoId);
+  const grade = avaliacao ? grades.find((item) => item.idGrade === avaliacao.gradeId) : undefined;
+  const materia = grade ? materias.find((item) => item.idMateria === grade.materiaId) : undefined;
+  const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaId) : undefined;
 
   return (
     <article className="card-nota">

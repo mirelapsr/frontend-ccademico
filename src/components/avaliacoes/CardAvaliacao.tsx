@@ -3,7 +3,6 @@ import "./CardAvaliacao.css";
 
 interface CardAvaliacaoProps {
   avaliacao: Avaliacao;
-  /** Listas completas — o card resolve grade → matéria/turma, e período pelas FKs. */
   grades: GradeCurricular[];
   materias: Materia[];
   turmas: Turma[];
@@ -35,10 +34,10 @@ function CardAvaliacao({
   aoEditar,
   aoExcluir,
 }: CardAvaliacaoProps) {
-  const grade = grades.find((item) => item.idGrade === avaliacao.gradeIdGrade);
-  const materia = grade ? materias.find((item) => item.idMateria === grade.materiaIdMateria) : undefined;
-  const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaIdTurma) : undefined;
-  const periodo = periodos.find((item) => item.idPeriodo === avaliacao.periodoIdPeriodo);
+  const grade = grades.find((item) => item.idGrade === avaliacao.gradeId);
+  const materia = grade ? materias.find((item) => item.idMateria === grade.materiaId) : undefined;
+  const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaId) : undefined;
+  const periodo = periodos.find((item) => item.idPeriodo === avaliacao.periodoId);
 
   return (
     <article className="card-avaliacao">
@@ -86,7 +85,7 @@ function CardAvaliacao({
 
         <div className="card-avaliacao__coluna">
           <span className="card-avaliacao__rotulo">Peso</span>
-          <p className="card-avaliacao__valor">{formatarPeso(avaliacao.peso)}</p>
+          <p className="card-avaliacao__valor">{formatarPeso(Number(avaliacao.peso))}</p>
         </div>
 
         <div className="card-avaliacao__coluna">

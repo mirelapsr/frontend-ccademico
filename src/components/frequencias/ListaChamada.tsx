@@ -1,11 +1,10 @@
-import type { Aluno, GradeCurricular, Materia, Matricula, StatusFrequencia, Turma } from "../../types";
+import type { Aluno, GradeCurricular, Materia, SituacaoFrequencia, Turma } from "../../types";
 import CardChamada from "./CardChamada";
 import "./ListaChamada.css";
 
 export interface LinhaChamada {
-  matricula: Matricula;
   aluno: Aluno;
-  status: StatusFrequencia;
+  situacao: SituacaoFrequencia;
   justificativa: string;
 }
 
@@ -16,23 +15,22 @@ interface ListaChamadaProps {
   turmaSelecionada: number | "";
   gradeSelecionada: number | "";
   data: string;
-  /** Indica se já existe chamada gravada para o trio turma+disciplina+data atual. */
   chamadaJaExiste: boolean;
-  aoMudarTurma: (turmaIdTurma: number | "") => void;
-  aoMudarGrade: (gradeIdGrade: number | "") => void;
+  aoMudarTurma: (turmaId: number | "") => void;
+  aoMudarGrade: (gradeId: number | "") => void;
   aoMudarData: (data: string) => void;
   aoDiaAnterior: () => void;
   aoHoje: () => void;
   aoProximoDia: () => void;
   linhas: LinhaChamada[];
-  aoMudarStatus: (matriculaIdMatricula: number, status: StatusFrequencia) => void;
-  aoMudarJustificativa: (matriculaIdMatricula: number, justificativa: string) => void;
+  aoMudarSituacao: (alunoId: number, situacao: SituacaoFrequencia) => void;
+  aoMudarJustificativa: (alunoId: number, justificativa: string) => void;
   aoMarcarTodosPresentes: () => void;
   aoSalvar: () => void;
 }
 
-function nomeMateria(materias: Materia[], materiaIdMateria: number): string {
-  return materias.find((materia) => materia.idMateria === materiaIdMateria)?.nomeMateria ?? "Matéria";
+function nomeMateria(materias: Materia[], materiaId: number): string {
+  return materias.find((materia) => materia.idMateria === materiaId)?.nomeMateria ?? "Matéria";
 }
 
 function ListaChamada({
@@ -50,7 +48,7 @@ function ListaChamada({
   aoHoje,
   aoProximoDia,
   linhas,
-  aoMudarStatus,
+  aoMudarSituacao,
   aoMudarJustificativa,
   aoMarcarTodosPresentes,
   aoSalvar,
@@ -95,7 +93,7 @@ function ListaChamada({
             </option>
             {gradesDaTurma.map((grade) => (
               <option key={grade.idGrade} value={grade.idGrade}>
-                {nomeMateria(materias, grade.materiaIdMateria)}
+                {nomeMateria(materias, grade.materiaId)}
               </option>
             ))}
           </select>
@@ -151,16 +149,14 @@ function ListaChamada({
           </div>
 
           <div className="lista-chamada__linhas">
-            {linhas.map(({ matricula, aluno, status, justificativa }) => (
+            {linhas.map(({ aluno, situacao, justificativa }) => (
               <CardChamada
-                key={matricula.idMatricula}
+                key={aluno.idAluno}
                 aluno={aluno}
-                status={status}
+                situacao={situacao}
                 justificativa={justificativa}
-                aoMudarStatus={(novoStatus) => aoMudarStatus(matricula.idMatricula, novoStatus)}
-                aoMudarJustificativa={(texto) =>
-                  aoMudarJustificativa(matricula.idMatricula, texto)
-                }
+                aoMudarSituacao={(novaSituacao) => aoMudarSituacao(aluno.idAluno, novaSituacao)}
+                aoMudarJustificativa={(texto) => aoMudarJustificativa(aluno.idAluno, texto)}
               />
             ))}
           </div>

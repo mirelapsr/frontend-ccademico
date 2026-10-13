@@ -1,36 +1,43 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import ListaMatriculas from "../components/matriculas/ListaMatriculas";
 import FormularioMatricula from "../components/matriculas/FormularioMatricula";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
-import Toast from "../components/ui/Toast";
-import { alunosMock, matriculasMock, turmasMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+import Toast, { type TipoToast } from "../components/ui/Toast";
+import { useLista } from "../hooks/useLista";
+import {
+  atualizarMatricula,
+  criarMatricula,
+  ehErroDeVinculo,
+  excluirMatricula,
+  mensagemDeErroMatricula,
+} from "../services/matriculaService";
 import type { Aluno, Matricula, MatriculaEntrada, Turma } from "../types";
 
 type Tela = "lista" | "formulario";
 
-function proximoId(matriculas: Matricula[]): number {
-  return matriculas.reduce((maior, matricula) => Math.max(maior, matricula.idMatricula), 0) + 1;
-}
-
-function agora(): string {
-  return new Date().toISOString();
+interface Feedback {
+  tipo: TipoToast;
+  mensagem: string;
 }
 
 function PaginaMatriculas() {
-  const [matriculas, setMatriculas] = useColecaoPersistida<Matricula>(
-    CHAVES_LOCALSTORAGE.matriculas,
-    matriculasMock
-  );
-  const [alunos] = useColecaoPersistida<Aluno>(CHAVES_LOCALSTORAGE.alunos, alunosMock);
-  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
+  const {
+    dados: matriculas,
+    carregando: carregandoMatriculas,
+    erro: erroMatriculas,
+    recarregar: recarregarMatriculas,
+  } = useLista<Matricula>("/matriculas");
+  const { dados: alunos, carregando: carregandoAlunos, erro: erroAlunos } = useLista<Aluno>("/alunos");
+  const { dados: turmas, carregando: carregandoTurmas, erro: erroTurmas } = useLista<Turma>("/turmas");
+
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [matriculaEmEdicao, setMatriculaEmEdicao] = useState<Matricula | null>(null);
-
   const [matriculaParaExcluir, setMatriculaParaExcluir] = useState<Matricula | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const carregando = carregandoMatriculas || carregandoAlunos || carregandoTurmas;
+  const erro = erroMatriculas ?? erroAlunos ?? erroTurmas;
 
   function abrirNovaMatricula() {
     setMatriculaEmEdicao(null);
@@ -48,49 +55,30 @@ function PaginaMatriculas() {
     setTelaAtual("lista");
   }
 
-  function adicionarMatricula(dados: MatriculaEntrada) {
-    const novaMatricula: Matricula = {
-      ...dados,
-      idMatricula: proximoId(matriculas),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setMatriculas((atual) => [...atual, novaMatricula]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Matrícula criada com sucesso!");
-  }
-
-  function atualizarMatricula(idMatricula: number, dados: MatriculaEntrada) {
-    setMatriculas((atual) =>
-      atual.map((matricula) =>
-        matricula.idMatricula === idMatricula
-          ? { ...matricula, ...dados, atualizadoEm: agora() }
-          : matricula
-      )
-    );
-    setMatriculaEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Matrícula atualizada com sucesso!");
-  }
-
-  function handleSalvarFormulario(dados: MatriculaEntrada) {
-    if (matriculaEmEdicao) {
-      atualizarMatricula(matriculaEmEdicao.idMatricula, dados);
-    } else {
-      adicionarMatricula(dados);
+  async function handleSalvarFormulario(dados: MatriculaEntrada): Promise<void> {
+    try {
+      if (matriculaEmEdicao) {
+        await atualizarMatricula(matriculaEmEdicao.idMatricula, dados);
+      } else {
+        await criarMatricula(dados);
+      }
+      setFeedback({
+        tipo: "sucesso",
+        mensagem: matriculaEmEdicao
+          ? "Matrícula atualizada com sucesso!"
+          : "Matrícula cadastrada com sucesso!",
+      });
+      cancelarFormulario();
+      await recarregarMatriculas();
+    } catch (e: unknown) {
+      throw new Error(mensagemDeErroMatricula(e, "Não foi possível salvar a matrícula."));
     }
   }
 
-  /**
-   * Mesma regra do trigger `func_matricula_unica_ativa_ins/upd` do banco:
-   * um aluno não pode ter duas matrículas com `situacao = 'Ativa'` ao mesmo
-   * tempo. Roda no client antes do `salvar()` para dar feedback imediato,
-   * em vez de deixar o usuário só descobrir isso quando a API rejeitar.
-   */
-  function existeOutraMatriculaAtiva(alunoIdAluno: number): boolean {
+  function existeOutraMatriculaAtiva(alunoId: number): boolean {
     return matriculas.some(
       (matricula) =>
-        matricula.alunoIdAluno === alunoIdAluno &&
+        matricula.alunoId === alunoId &&
         matricula.situacao === "Ativa" &&
         matricula.idMatricula !== matriculaEmEdicao?.idMatricula
     );
@@ -101,21 +89,36 @@ function PaginaMatriculas() {
     setMatriculaParaExcluir(matricula);
   }
 
-  function confirmarExclusao() {
-    if (!matriculaParaExcluir) return;
-    setMatriculas((atual) =>
-      atual.filter((matricula) => matricula.idMatricula !== matriculaParaExcluir.idMatricula)
-    );
-    setMatriculaParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setMatriculaParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!matriculaParaExcluir || excluindo) return;
+    const alvo = matriculaParaExcluir;
+
+    setExcluindo(true);
+    try {
+      await excluirMatricula(alvo.idMatricula);
+      setFeedback({ tipo: "sucesso", mensagem: "Matrícula excluída com sucesso!" });
+      await recarregarMatriculas();
+    } catch (e: unknown) {
+      setFeedback({
+        tipo: "erro",
+        mensagem: ehErroDeVinculo(e)
+          ? "Não é possível excluir esta matrícula pois ela possui notas ou frequências vinculadas."
+          : mensagemDeErroMatricula(e, "Não foi possível excluir a matrícula."),
+      });
+    } finally {
+      setExcluindo(false);
+      setMatriculaParaExcluir(null);
+    }
   }
 
-  function cancelarExclusao() {
-    setMatriculaParaExcluir(null);
-  }
+  const fecharFeedback = useCallback(() => setFeedback(null), []);
 
   const alunoDaMatriculaParaExcluir = matriculaParaExcluir
-    ? alunos.find((aluno) => aluno.idAluno === matriculaParaExcluir.alunoIdAluno)
+    ? alunos.find((aluno) => aluno.idAluno === matriculaParaExcluir.alunoId)
     : null;
 
   return (
@@ -131,6 +134,7 @@ function PaginaMatriculas() {
         />
       ) : (
         <FormularioMatricula
+          key={matriculaEmEdicao?.idMatricula ?? "nova"}
           matriculaEditando={matriculaEmEdicao}
           alunos={alunos}
           turmas={turmas}
@@ -147,17 +151,18 @@ function PaginaMatriculas() {
             alunoDaMatriculaParaExcluir ? ` de "${alunoDaMatriculaParaExcluir.nomeAluno}"` : ""
           }? Essa ação não pode ser desfeita.`}
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
-      {mensagemSucesso && (
+      {feedback && (
         <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
+          mensagem={feedback.mensagem}
+          tipo={feedback.tipo}
+          duracaoMs={feedback.tipo === "erro" ? 6000 : undefined}
+          aoFechar={fecharFeedback}
         />
       )}
     </>

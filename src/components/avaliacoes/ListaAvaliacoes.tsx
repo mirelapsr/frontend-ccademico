@@ -33,9 +33,9 @@ function ListaAvaliacoes({
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return avaliacoes.filter((avaliacao) => {
-      const grade = grades.find((item) => item.idGrade === avaliacao.gradeIdGrade);
-      const materia = grade ? materias.find((item) => item.idMateria === grade.materiaIdMateria) : undefined;
-      const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaIdTurma) : undefined;
+      const grade = grades.find((item) => item.idGrade === avaliacao.gradeId);
+      const materia = grade ? materias.find((item) => item.idMateria === grade.materiaId) : undefined;
+      const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaId) : undefined;
 
       const combinaBusca =
         buscaNormalizada === "" ||
@@ -79,6 +79,8 @@ function ListaAvaliacoes({
           <option value="todos">Todos os tipos</option>
           <option value="Prova">Prova</option>
           <option value="Trabalho">Trabalho</option>
+          <option value="Projeto">Projeto</option>
+          <option value="Recuperacao">Recuperação</option>
           <option value="Seminario">Seminário</option>
           <option value="Participacao">Participação</option>
           <option value="Outro">Outro</option>

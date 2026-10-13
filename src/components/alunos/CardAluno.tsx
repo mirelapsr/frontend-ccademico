@@ -104,8 +104,8 @@ function CardAluno({ aluno, nomeTurma, aoEditar, aoExcluir }: CardAlunoProps) {
       </div>
 
       <footer className="card-aluno__rodape">
-        <span>Cadastrado em: {formatarData(aluno.criadoEm)}</span>
-        <span>Atualizado em: {formatarData(aluno.atualizadoEm)}</span>
+        <span>Cadastrado em: {aluno.criadoEm ? formatarData(aluno.criadoEm) : "—"}</span>
+        <span>Atualizado em: {aluno.atualizadoEm ? formatarData(aluno.atualizadoEm) : "—"}</span>
       </footer>
     </article>
   );

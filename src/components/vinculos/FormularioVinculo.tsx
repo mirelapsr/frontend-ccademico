@@ -1,10 +1,11 @@
-import { useState, type FormEvent, useMemo } from "react";
+import { useState, type FormEvent, useMemo, useRef } from "react";
 import type { Aluno, Responsavel, AlunoResponsavelEntrada, TipoResponsavel } from "../../types";
 import Combobox, { type OpcaoCombobox } from "../ui/Combobox";
+
 interface FormularioVinculoProps {
   alunos: Aluno[];
   responsaveis: Responsavel[];
-  salvar: (dados: AlunoResponsavelEntrada) => void;
+  salvar: (alunoId: number, responsavelId: number, dados: AlunoResponsavelEntrada) => Promise<void> | void;
   cancelar: () => void;
 }
 
@@ -14,6 +15,8 @@ export default function FormularioVinculo({ alunos, responsaveis, salvar, cancel
   const [tipo, setTipo] = useState<TipoResponsavel>("Mae");
   const [financeiro, setFinanceiro] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const emEnvioRef = useRef(false);
 
   // Mapeia alunos para o formato do Combobox
   const opcoesAlunos: OpcaoCombobox[] = useMemo(() => {
@@ -33,19 +36,30 @@ export default function FormularioVinculo({ alunos, responsaveis, salvar, cancel
     }));
   }, [responsaveis]);
 
-  function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (emEnvioRef.current || enviando) return;
+
     if (!alunoId || !respId) {
       setErro("Aluno e Responsável são obrigatórios.");
       return;
     }
+
     setErro(null);
-    salvar({
-      alunoIdAluno: Number(alunoId),
-      responsavelIdResponsavel: Number(respId),
-      tipoResponsavel: tipo,
-      responsavelFinanceiro: financeiro,
-    });
+    setEnviando(true);
+    emEnvioRef.current = true;
+
+    try {
+      await salvar(Number(alunoId), Number(respId), {
+        tipoResponsavel: tipo,
+        responsavelFinanceiro: financeiro,
+      });
+    } catch (e: unknown) {
+      setErro(e instanceof Error ? e.message : "Não foi possível criar o vínculo.");
+    } finally {
+      emEnvioRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (
@@ -78,7 +92,8 @@ export default function FormularioVinculo({ alunos, responsaveis, salvar, cancel
           <select 
             value={tipo} 
             onChange={(e) => setTipo(e.target.value as TipoResponsavel)}
-            style={{ padding: '8px 12pux', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+            disabled={enviando}
+            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
           >
             <option value="Mae">Mãe</option>
             <option value="Pai">Pai</option>
@@ -92,6 +107,7 @@ export default function FormularioVinculo({ alunos, responsaveis, salvar, cancel
             type="checkbox" 
             checked={financeiro} 
             onChange={(e) => setFinanceiro(e.target.checked)} 
+            disabled={enviando}
             style={{ width: '18px', height: '18px' }} 
           />
           <strong>Responsável Financeiro?</strong>
@@ -100,8 +116,21 @@ export default function FormularioVinculo({ alunos, responsaveis, salvar, cancel
         {erro && <p style={{ color: 'red', fontSize: '0.85rem' }}>{erro}</p>}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
-          <button type="button" onClick={cancelar} style={{ background: 'transparent', color: '#666', border: '1px solid #ccc', padding: '8px 16px', borderRadius: '6px' }}>Cancelar</button>
-          <button type="submit" style={{ background: '#1e3a8a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>Vincular</button>
+          <button 
+            type="button" 
+            onClick={cancelar} 
+            disabled={enviando}
+            style={{ background: 'transparent', color: '#666', border: '1px solid #ccc', padding: '8px 16px', borderRadius: '6px' }}
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            disabled={enviando}
+            style={{ background: '#1e3a8a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
+          >
+            {enviando ? "Vinculando..." : "Vincular"}
+          </button>
         </div>
       </form>
     </section>

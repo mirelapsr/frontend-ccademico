@@ -1,144 +1,168 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ListaGrades from "../components/grades/ListaGrades";
 import FormularioGrade from "../components/grades/FormularioGrade";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
-import { turmasMock, materiasMock, professoresMock, gradesCurricularesMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
-import type { GradeCurricular, GradeCurricularEntrada, Turma, Materia, Professor } from "../types";
-
-type Tela = "lista" | "formulario";
-
-function proximoId(grades: GradeCurricular[]): number {
-  return grades.reduce((maior, grade) => Math.max(maior, grade.idGrade), 0) + 1;
-}
-
-function agora(): string {
-  return new Date().toISOString();
-}
+import { listarTurmas } from "../services/turmaService";
+import { listarMaterias } from "../services/materiaService";
+import { listarProfessores } from "../services/professorService";
+import {
+  atualizarGrade,
+  criarGrade,
+  ehErroDeVinculo,
+  excluirGrade,
+  listarGrades,
+  mensagemDeErroGrade,
+} from "../services/gradeService";
+import type { GradeCurricular, GradeCurricularEntrada, Materia, Professor, Turma } from "../types";
 
 function PaginaGrades() {
-  const [grades, setGrades] = useColecaoPersistida<GradeCurricular>(
-    CHAVES_LOCALSTORAGE.gradesCurriculares,
-    gradesCurricularesMock
-  );
-  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
-  const [materias] = useColecaoPersistida<Materia>(CHAVES_LOCALSTORAGE.materias, materiasMock);
-  const [professores] = useColecaoPersistida<Professor>(
-    CHAVES_LOCALSTORAGE.professores,
-    professoresMock
-  );
+  const [grades, setGrades] = useState<GradeCurricular[]>([]);
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [materias, setMaterias] = useState<Materia[]>([]);
+  const [professores, setProfessores] = useState<Professor[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const [telaAtual, setTelaAtual] = useState<Tela>("lista");
+  const [modalAberto, setModalAberto] = useState(false);
   const [gradeEmEdicao, setGradeEmEdicao] = useState<GradeCurricular | null>(null);
+
   const [gradeParaExcluir, setGradeParaExcluir] = useState<GradeCurricular | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
+
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const [listaGrades, listaTurmas, listaMaterias, listaProfessores] = await Promise.all([
+        listarGrades(),
+        listarTurmas(),
+        listarMaterias(),
+        listarProfessores(),
+      ]);
+      setGrades(listaGrades);
+      setTurmas(listaTurmas);
+      setMaterias(listaMaterias);
+      setProfessores(listaProfessores);
+    } catch (e) {
+      setErro(mensagemDeErroGrade(e, "Não foi possível carregar as grades curriculares."));
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
 
   function abrirNovaGrade() {
     setGradeEmEdicao(null);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function abrirEdicaoGrade(idGrade: number) {
     const grade = grades.find((item) => item.idGrade === idGrade) ?? null;
+    if (!grade) return;
     setGradeEmEdicao(grade);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
-  function cancelarFormulario() {
+  const cancelarFormulario = useCallback(() => {
     setGradeEmEdicao(null);
-    setTelaAtual("lista");
-  }
+    setModalAberto(false);
+  }, []);
 
-  function adicionarGrade(dados: GradeCurricularEntrada) {
-    const novaGrade: GradeCurricular = {
-      ...dados,
-      idGrade: proximoId(grades),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setGrades((atual) => [...atual, novaGrade]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Grade curricular criada com sucesso!");
-  }
-
-  function atualizarGrade(idGrade: number, dados: GradeCurricularEntrada) {
-    setGrades((atual) =>
-      atual.map((grade) =>
-        grade.idGrade === idGrade ? { ...grade, ...dados, atualizadoEm: agora() } : grade
-      )
-    );
-    setGradeEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Grade curricular atualizada com sucesso!");
-  }
-
-  function handleSalvarFormulario(dados: GradeCurricularEntrada) {
-    if (gradeEmEdicao) {
-      atualizarGrade(gradeEmEdicao.idGrade, dados);
-    } else {
-      adicionarGrade(dados);
-    }
-  }
-
-  /**
-   * Mesma regra da constraint `uq_grade_turma_materia` do banco: uma turma
-   * não pode ter a mesma matéria cadastrada duas vezes na grade curricular.
-   * Roda no client antes do `salvar()` para dar feedback imediato.
-   */
-  function existeGradeDuplicada(turmaIdTurma: number, materiaIdMateria: number): boolean {
+  function existeGradeDuplicada(turmaId: number, materiaId: number): boolean {
     return grades.some(
-      (grade) =>
-        grade.turmaIdTurma === turmaIdTurma &&
-        grade.materiaIdMateria === materiaIdMateria &&
-        grade.idGrade !== gradeEmEdicao?.idGrade
+      (item) =>
+        item.idGrade !== gradeEmEdicao?.idGrade &&
+        item.turmaId === turmaId &&
+        item.materiaId === materiaId
     );
+  }
+
+  async function salvarFormulario(dados: GradeCurricularEntrada): Promise<void> {
+    try {
+      if (gradeEmEdicao) {
+        await atualizarGrade(gradeEmEdicao.idGrade, dados);
+        setMensagemSucesso("Grade curricular atualizada com sucesso!");
+      } else {
+        await criarGrade(dados);
+        setMensagemSucesso("Grade curricular cadastrada com sucesso!");
+      }
+    } catch (e) {
+      throw new Error(mensagemDeErroGrade(e, "Não foi possível salvar a grade curricular."));
+    }
+    cancelarFormulario();
+    await carregar();
   }
 
   function pedirConfirmacaoExclusao(idGrade: number) {
-    const grade = grades.find((item) => item.idGrade === idGrade) ?? null;
-    setGradeParaExcluir(grade);
+    setGradeParaExcluir(grades.find((item) => item.idGrade === idGrade) ?? null);
   }
 
-  function confirmarExclusao() {
-    if (!gradeParaExcluir) return;
-    setGrades((atual) => atual.filter((grade) => grade.idGrade !== gradeParaExcluir.idGrade));
-    setGradeParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setGradeParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!gradeParaExcluir || excluindo) return;
+    const alvo = gradeParaExcluir;
+
+    setExcluindo(true);
+    setErro(null);
+    try {
+      await excluirGrade(alvo.idGrade);
+      setGrades((atual) => atual.filter((g) => g.idGrade !== alvo.idGrade));
+      setMensagemSucesso("Grade curricular excluída com sucesso!");
+    } catch (e) {
+      setErro(
+        ehErroDeVinculo(e)
+          ? "Não é possível excluir esta grade curricular: existem aulas, presenças ou avaliações vinculadas."
+          : mensagemDeErroGrade(e, "Não foi possível excluir a grade curricular.")
+      );
+    } finally {
+      setExcluindo(false);
+      setGradeParaExcluir(null);
+    }
   }
 
-  function cancelarExclusao() {
-    setGradeParaExcluir(null);
-  }
+  const fecharToast = useCallback(() => setMensagemSucesso(null), []);
 
-  const materiaParaExcluir = gradeParaExcluir
-    ? materias.find((materia) => materia.idMateria === gradeParaExcluir.materiaIdMateria)
-    : null;
-  const turmaParaExcluir = gradeParaExcluir
-    ? turmas.find((turma) => turma.idTurma === gradeParaExcluir.turmaIdTurma)
-    : null;
+  const materiaAlvo = materias.find((m) => m.idMateria === gradeParaExcluir?.materiaId);
+  const turmaAlvo = turmas.find((t) => t.idTurma === gradeParaExcluir?.turmaId);
+  const descricaoExclusao =
+    materiaAlvo && turmaAlvo
+      ? `a grade de "${materiaAlvo.nomeMateria}" da turma "${turmaAlvo.nomeTurma}"`
+      : "esta grade curricular";
 
   return (
     <>
-      {telaAtual === "lista" ? (
+      {!modalAberto ? (
         <ListaGrades
           grades={grades}
           turmas={turmas}
           materias={materias}
           professores={professores}
+          carregando={carregando}
+          erro={erro}
+          aoDispensarErro={() => setErro(null)}
+          aoRecarregar={() => void carregar()}
           aoNovaGrade={abrirNovaGrade}
           aoEditarGrade={abrirEdicaoGrade}
           aoExcluirGrade={pedirConfirmacaoExclusao}
         />
       ) : (
         <FormularioGrade
+          key={gradeEmEdicao?.idGrade ?? "nova"}
           gradeEditando={gradeEmEdicao}
           turmas={turmas}
           materias={materias}
           professores={professores}
           existeGradeDuplicada={existeGradeDuplicada}
-          salvar={handleSalvarFormulario}
+          salvar={salvarFormulario}
           cancelar={cancelarFormulario}
         />
       )}
@@ -146,22 +170,20 @@ function PaginaGrades() {
       {gradeParaExcluir && (
         <ModalConfirmacao
           titulo="Excluir grade curricular"
-          mensagem={`Tem certeza que deseja excluir a grade${
-            materiaParaExcluir ? ` de "${materiaParaExcluir.nomeMateria}"` : ""
-          }${turmaParaExcluir ? ` da turma "${turmaParaExcluir.nomeTurma}"` : ""}? Essa ação não pode ser desfeita.`}
+          mensagem={
+            excluindo
+              ? "Excluindo..."
+              : `Tem certeza de que deseja excluir ${descricaoExclusao}? Esta ação não pode ser desfeita.`
+          }
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
       {mensagemSucesso && (
-        <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
-        />
+        <Toast mensagem={mensagemSucesso} tipo="sucesso" aoFechar={fecharToast} />
       )}
     </>
   );

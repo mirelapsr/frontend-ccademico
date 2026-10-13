@@ -8,6 +8,10 @@ interface ListaGradesProps {
   turmas: Turma[];
   materias: Materia[];
   professores: Professor[];
+  carregando: boolean;
+  erro: string | null;
+  aoDispensarErro: () => void;
+  aoRecarregar: () => void;
   aoNovaGrade: () => void;
   aoEditarGrade: (idGrade: number) => void;
   aoExcluirGrade: (idGrade: number) => void;
@@ -18,6 +22,10 @@ function ListaGrades({
   turmas,
   materias,
   professores,
+  carregando,
+  erro,
+  aoDispensarErro,
+  aoRecarregar,
   aoNovaGrade,
   aoEditarGrade,
   aoExcluirGrade,
@@ -34,9 +42,14 @@ function ListaGrades({
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return grades.filter((grade) => {
-      const turma = turmas.find((item) => item.idTurma === grade.turmaIdTurma);
-      const materia = materias.find((item) => item.idMateria === grade.materiaIdMateria);
-      const professor = professores.find((item) => item.idProfessor === grade.professorIdProfessor);
+      const g = grade as Record<string, any>;
+      const turmaId = grade.turmaIdTurma ?? g.turmaId;
+      const materiaId = grade.materiaIdMateria ?? g.materiaId;
+      const professorId = grade.professorIdProfessor ?? g.professorId;
+
+      const turma = turmas.find((item) => item.idTurma === turmaId);
+      const materia = materias.find((item) => item.idMateria === materiaId);
+      const professor = professores.find((item) => item.idProfessor === professorId);
 
       const combinaBusca =
         buscaNormalizada === "" ||
@@ -58,6 +71,25 @@ function ListaGrades({
           + Nova Grade
         </button>
       </header>
+
+      {erro && (
+        <div className="lista-grades__alerta" role="alert">
+          <p>{erro}</p>
+          <div className="lista-grades__alerta-acoes">
+            <button type="button" onClick={aoRecarregar} disabled={carregando}>
+              Tentar novamente
+            </button>
+            <button
+              type="button"
+              className="lista-grades__alerta-fechar"
+              onClick={aoDispensarErro}
+              aria-label="Dispensar alerta"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="lista-grades__filtros">
         <label className="lista-grades__busca">
@@ -88,7 +120,11 @@ function ListaGrades({
         </select>
       </div>
 
-      {gradesFiltradas.length === 0 ? (
+      {carregando ? (
+        <p className="lista-grades__estado" role="status">
+          A carregar grades curriculares...
+        </p>
+      ) : gradesFiltradas.length === 0 ? (
         <p className="lista-grades__vazio-geral">
           {grades.length === 0
             ? "Nenhuma grade curricular cadastrada ainda."
@@ -96,17 +132,21 @@ function ListaGrades({
         </p>
       ) : (
         <div className="lista-grades__grade">
-          {gradesFiltradas.map((grade) => (
-            <CardGradeCurricular
-              key={grade.idGrade}
-              grade={grade}
-              turmas={turmas}
-              materias={materias}
-              professores={professores}
-              aoEditar={() => aoEditarGrade(grade.idGrade)}
-              aoExcluir={() => aoExcluirGrade(grade.idGrade)}
-            />
-          ))}
+          {gradesFiltradas.map((grade) => {
+            const g = grade as Record<string, any>;
+            const idGrade = grade.idGrade ?? g.idGradeCurricular ?? 0;
+            return (
+              <CardGradeCurricular
+                key={idGrade}
+                grade={grade}
+                turmas={turmas}
+                materias={materias}
+                professores={professores}
+                aoEditar={aoEditarGrade}
+                aoExcluir={aoExcluirGrade}
+              />
+            );
+          })}
         </div>
       )}
     </section>

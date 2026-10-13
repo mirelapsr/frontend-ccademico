@@ -8,6 +8,10 @@ interface ListaPeriodosProps {
   aoNovoPeriodo: () => void;
   aoEditarPeriodo: (idPeriodo: number) => void;
   aoExcluirPeriodo: (idPeriodo: number) => void;
+  carregando?: boolean;
+  erro?: string | null;
+  aoDispensarErro?: () => void;
+  aoRecarregar?: () => void;
 }
 
 type FiltroSituacao = "todas" | SituacaoPeriodo;
@@ -17,6 +21,10 @@ function ListaPeriodos({
   aoNovoPeriodo,
   aoEditarPeriodo,
   aoExcluirPeriodo,
+  carregando = false,
+  erro = null,
+  aoDispensarErro,
+  aoRecarregar,
 }: ListaPeriodosProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
@@ -45,6 +53,24 @@ function ListaPeriodos({
         </button>
       </header>
 
+      {erro && (
+        <div className="lista-periodos__erro" role="alert">
+          <p>{erro}</p>
+          <div className="lista-periodos__erro-acoes">
+            {aoRecarregar && (
+              <button type="button" onClick={aoRecarregar} disabled={carregando}>
+                Recarregar
+              </button>
+            )}
+            {aoDispensarErro && (
+              <button type="button" onClick={aoDispensarErro} aria-label="Dispensar aviso">
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="lista-periodos__filtros">
         <label className="lista-periodos__busca">
           <IconeBusca />
@@ -71,9 +97,11 @@ function ListaPeriodos({
 
       {periodosFiltrados.length === 0 ? (
         <p className="lista-periodos__vazio-geral">
-          {periodos.length === 0
-            ? "Nenhum período cadastrado ainda."
-            : "Nenhum período encontrado para esses filtros."}
+          {carregando
+            ? "Carregando períodos..."
+            : periodos.length === 0
+              ? "Nenhum período cadastrado ainda."
+              : "Nenhum período encontrado para esses filtros."}
         </p>
       ) : (
         <div className="lista-periodos__grade">

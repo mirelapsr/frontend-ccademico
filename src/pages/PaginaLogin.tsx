@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import logoBrasao from "../assets/logo-brasao.jpg"; // Ajuste a extensão para .jpg se necessário
+import logoBrasao from "../assets/logo-brasao.jpg"; 
 import "./PaginaLogin.css";
 
 function PaginaLogin() {

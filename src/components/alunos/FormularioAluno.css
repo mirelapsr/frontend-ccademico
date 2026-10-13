@@ -88,3 +88,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+.formulario-aluno__acoes button:disabled,
+.formulario-aluno__campo input:disabled,
+.formulario-aluno__campo select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

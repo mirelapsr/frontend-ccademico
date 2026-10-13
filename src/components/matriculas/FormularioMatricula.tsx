@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type { Aluno, Matricula, MatriculaEntrada, SituacaoMatricula, Turma } from "../../types";
 import "./FormularioMatricula.css";
 
@@ -9,13 +9,12 @@ interface FormularioMatriculaProps {
   /** Turmas disponíveis, para o <select> de turma. */
   turmas: Turma[];
   /**
-   * Espelha a regra do trigger `func_matricula_unica_ativa_ins/upd`: recebe
-   * o `alunoIdAluno` candidato e deve responder se já existe, para esse
-   * aluno, outra matrícula com `situacao === "Ativa"` (a que está sendo
-   * editada não conta). Só é chamada quando a situação escolhida é "Ativa".
+   * Espelha a regra do trigger: recebe o `alunoId` candidato e deve
+   * responder se já existe, para esse aluno, outra matrícula com
+   * `situacao === "Ativa"` (a que está sendo editada não conta).
    */
-  existeOutraMatriculaAtiva: (alunoIdAluno: number) => boolean;
-  salvar: (dados: MatriculaEntrada) => void;
+  existeOutraMatriculaAtiva: (alunoId: number) => boolean;
+  salvar: (dados: MatriculaEntrada) => Promise<void> | void;
   cancelar: () => void;
 }
 
@@ -31,11 +30,11 @@ function FormularioMatricula({
   salvar,
   cancelar,
 }: FormularioMatriculaProps) {
-  const [alunoIdAluno, setAlunoIdAluno] = useState(
-    matriculaEditando?.alunoIdAluno ?? alunos[0]?.idAluno ?? 0
+  const [alunoId, setAlunoId] = useState(
+    matriculaEditando?.alunoId ?? alunos[0]?.idAluno ?? 0
   );
-  const [turmaIdTurma, setTurmaIdTurma] = useState(
-    matriculaEditando?.turmaIdTurma ?? turmas[0]?.idTurma ?? 0
+  const [turmaId, setTurmaId] = useState(
+    matriculaEditando?.turmaId ?? turmas[0]?.idTurma ?? 0
   );
   const [dataMatricula, setDataMatricula] = useState(
     matriculaEditando?.dataMatricula ?? hoje()
@@ -44,17 +43,20 @@ function FormularioMatricula({
     matriculaEditando?.situacao ?? "Ativa"
   );
   const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const emEnvioRef = useRef(false);
 
-  function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (emEnvioRef.current || enviando) return;
 
-    if (!alunoIdAluno || !turmaIdTurma || !dataMatricula) {
+    if (!alunoId || !turmaId || !dataMatricula) {
       setErro("Aluno, turma e data da matrícula são obrigatórios.");
       return;
     }
 
-    if (situacao === "Ativa" && existeOutraMatriculaAtiva(Number(alunoIdAluno))) {
-      const aluno = alunos.find((item) => item.idAluno === Number(alunoIdAluno));
+    if (situacao === "Ativa" && existeOutraMatriculaAtiva(Number(alunoId))) {
+      const aluno = alunos.find((item) => item.idAluno === Number(alunoId));
       setErro(
         `${aluno?.nomeAluno ?? "Este aluno"} já possui uma matrícula ativa. ` +
           "Encerre ou transfira a matrícula atual antes de criar outra."
@@ -62,13 +64,23 @@ function FormularioMatricula({
       return;
     }
 
+    emEnvioRef.current = true;
+    setEnviando(true);
     setErro(null);
-    salvar({
-      alunoIdAluno: Number(alunoIdAluno),
-      turmaIdTurma: Number(turmaIdTurma),
-      dataMatricula,
-      situacao,
-    });
+
+    try {
+      await salvar({
+        alunoId: Number(alunoId),
+        turmaId: Number(turmaId),
+        dataMatricula,
+        situacao,
+      });
+    } catch (e: unknown) {
+      setErro(e instanceof Error ? e.message : "Não foi possível salvar a matrícula.");
+    } finally {
+      emEnvioRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (
@@ -81,8 +93,9 @@ function FormularioMatricula({
         <label className="formulario-matricula__campo formulario-matricula__campo--largo">
           <span>Aluno *</span>
           <select
-            value={alunoIdAluno}
-            onChange={(evento) => setAlunoIdAluno(Number(evento.target.value))}
+            value={alunoId}
+            onChange={(evento) => setAlunoId(Number(evento.target.value))}
+            disabled={enviando}
           >
             {alunos.length === 0 && <option value={0}>Nenhum aluno cadastrado</option>}
             {alunos.map((aluno) => (
@@ -96,8 +109,9 @@ function FormularioMatricula({
         <label className="formulario-matricula__campo formulario-matricula__campo--largo">
           <span>Turma *</span>
           <select
-            value={turmaIdTurma}
-            onChange={(evento) => setTurmaIdTurma(Number(evento.target.value))}
+            value={turmaId}
+            onChange={(evento) => setTurmaId(Number(evento.target.value))}
+            disabled={enviando}
           >
             {turmas.length === 0 && <option value={0}>Nenhuma turma cadastrada</option>}
             {turmas.map((turma) => (
@@ -114,6 +128,7 @@ function FormularioMatricula({
             type="date"
             value={dataMatricula}
             onChange={(evento) => setDataMatricula(evento.target.value)}
+            disabled={enviando}
           />
         </label>
 
@@ -122,6 +137,7 @@ function FormularioMatricula({
           <select
             value={situacao}
             onChange={(evento) => setSituacao(evento.target.value as SituacaoMatricula)}
+            disabled={enviando}
           >
             <option value="Ativa">Ativa</option>
             <option value="Cancelada">Cancelada</option>
@@ -141,11 +157,12 @@ function FormularioMatricula({
             type="button"
             className="formulario-matricula__botao-cancelar"
             onClick={cancelar}
+            disabled={enviando}
           >
             Cancelar
           </button>
-          <button type="submit" className="formulario-matricula__botao-salvar">
-            {matriculaEditando ? "Salvar alterações" : "Cadastrar matrícula"}
+          <button type="submit" className="formulario-matricula__botao-salvar" disabled={enviando}>
+            {enviando ? "Salvando..." : matriculaEditando ? "Salvar alterações" : "Cadastrar matrícula"}
           </button>
         </div>
       </form>

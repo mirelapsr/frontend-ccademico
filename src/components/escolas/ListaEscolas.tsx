@@ -9,13 +9,18 @@ interface ListaEscolasProps {
   aoNovaEscola: () => void;
   aoEditarEscola: (idEscola: number) => void;
   aoExcluirEscola: (idEscola: number) => void;
+  carregando?: boolean;
+  erro?: string | null;
+  aoDispensarErro?: () => void;
+  aoRecarregar?: () => void;
 }
 
 type FiltroRede = "todas" | "municipal" | "estadual";
 
 
-function inferirRede(nomeEscola: string): FiltroRede | "outra" {
-  const nomeEmMinusculas = nomeEscola.toLowerCase();
+function inferirRede(escola: Escola): FiltroRede | "outra" {
+  // Usa a rede cadastrada no banco; se vazia, cai na dedução pelo nome (comportamento original).
+  const nomeEmMinusculas = (escola.redeEnsino || escola.nomeEscola).toLowerCase();
   if (nomeEmMinusculas.includes("municipal")) return "municipal";
   if (nomeEmMinusculas.includes("estadual")) return "estadual";
   return "outra";
@@ -26,6 +31,10 @@ function ListaEscolas({
   aoNovaEscola,
   aoEditarEscola,
   aoExcluirEscola,
+  carregando = false,
+  erro = null,
+  aoDispensarErro,
+  aoRecarregar,
 }: ListaEscolasProps) {
   const [busca, setBusca] = useState("");
   const [filtroRede, setFiltroRede] = useState<FiltroRede>("todas");
@@ -41,7 +50,7 @@ function ListaEscolas({
         (escola.codigoInep ?? "").toLowerCase().includes(buscaNormalizada);
 
       const combinaFiltro =
-        filtroRede === "todas" || inferirRede(escola.nomeEscola) === filtroRede;
+        filtroRede === "todas" || inferirRede(escola) === filtroRede;
 
       return combinaBusca && combinaFiltro;
     });
@@ -59,6 +68,24 @@ function ListaEscolas({
           + Nova Escola
         </button>
       </header>
+
+      {erro && (
+        <div className="lista-escolas__erro" role="alert">
+          <p>{erro}</p>
+          <div className="lista-escolas__erro-acoes">
+            {aoRecarregar && (
+              <button type="button" onClick={aoRecarregar} disabled={carregando}>
+                Recarregar
+              </button>
+            )}
+            {aoDispensarErro && (
+              <button type="button" onClick={aoDispensarErro} aria-label="Dispensar aviso">
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="lista-escolas__filtros">
         <label className="lista-escolas__busca">
@@ -86,9 +113,11 @@ function ListaEscolas({
 
       {escolasFiltradas.length === 0 ? (
         <p className="lista-escolas__vazio-geral">
-          {escolas.length === 0
-            ? "Nenhuma escola cadastrada ainda."
-            : "Nenhuma escola encontrada para esses filtros."}
+          {carregando
+            ? "Carregando escolas..."
+            : escolas.length === 0
+              ? "Nenhuma escola cadastrada ainda."
+              : "Nenhuma escola encontrada para esses filtros."}
         </p>
       ) : (
         <div className="lista-escolas__grade">

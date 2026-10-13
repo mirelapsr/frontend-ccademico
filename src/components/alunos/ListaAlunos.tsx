@@ -10,6 +10,9 @@ interface ListaAlunosProps {
   aoNovoAluno: () => void;
   aoEditarAluno: (idAluno: number) => void;
   aoExcluirAluno: (idAluno: number) => void;
+  carregando?: boolean;
+  erro?: string | null;
+  aoRecarregar?: () => void;
 }
 
 type FiltroSituacao = "todas" | SituacaoAluno;
@@ -20,6 +23,9 @@ function ListaAlunos({
   aoNovoAluno,
   aoEditarAluno,
   aoExcluirAluno,
+  carregando = false,
+  erro = null,
+  aoRecarregar,
 }: ListaAlunosProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
@@ -49,6 +55,17 @@ function ListaAlunos({
         </button>
       </header>
 
+      {erro && (
+        <div className="lista-alunos__erro" role="alert">
+          <p>{erro}</p>
+          {aoRecarregar && (
+            <button type="button" onClick={aoRecarregar} disabled={carregando}>
+              Recarregar
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="lista-alunos__filtros">
         <label className="lista-alunos__busca">
           <IconeBusca />
@@ -76,9 +93,11 @@ function ListaAlunos({
 
       {alunosFiltrados.length === 0 ? (
         <p className="lista-alunos__vazio-geral">
-          {alunos.length === 0
-            ? "Nenhum aluno cadastrado ainda."
-            : "Nenhum aluno encontrado para esses filtros."}
+          {carregando
+            ? "Carregando alunos..."
+            : alunos.length === 0
+              ? "Nenhum aluno cadastrado ainda."
+              : "Nenhum aluno encontrado para esses filtros."}
         </p>
       ) : (
         <div className="lista-alunos__grade">

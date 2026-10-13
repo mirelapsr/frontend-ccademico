@@ -1,20 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import GradeAvaliacoes, { type ItemAvaliacaoResumo } from "../components/notas/GradeAvaliacoes";
 import DiarioNotas, { type LinhaLancamento } from "../components/notas/DiarioNotas";
 import ModalAplicarNotaGeral from "../components/notas/ModalAplicarNotaGeral";
 import Toast, { type TipoToast } from "../components/ui/Toast";
+import { useLista } from "../hooks/useLista";
 import {
-  matriculasMock,
-  alunosMock,
-  avaliacoesMock,
-  gradesCurricularesMock,
-  materiasMock,
-  turmasMock,
-  periodosMock,
-  notasMock,
-} from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+  atualizarNota,
+  criarNota,
+  mensagemDeErroNota,
+} from "../services/notaService";
 import type {
   Nota,
   Matricula,
@@ -31,8 +25,9 @@ interface EstadoLinha {
   observacao: string;
 }
 
-function agora(): string {
-  return new Date().toISOString();
+interface Feedback {
+  tipo: TipoToast;
+  mensagem: string;
 }
 
 function notaEhInvalida(valorNota: string): boolean {
@@ -42,17 +37,19 @@ function notaEhInvalida(valorNota: string): boolean {
 }
 
 function PaginaNotas() {
-  const [notas, setNotas] = useColecaoPersistida<Nota>(CHAVES_LOCALSTORAGE.notas, notasMock);
-  const [matriculas] = useColecaoPersistida<Matricula>(CHAVES_LOCALSTORAGE.matriculas, matriculasMock);
-  const [alunos] = useColecaoPersistida<Aluno>(CHAVES_LOCALSTORAGE.alunos, alunosMock);
-  const [avaliacoes] = useColecaoPersistida<Avaliacao>(CHAVES_LOCALSTORAGE.avaliacoes, avaliacoesMock);
-  const [grades] = useColecaoPersistida<GradeCurricular>(
-    CHAVES_LOCALSTORAGE.gradesCurriculares,
-    gradesCurricularesMock
-  );
-  const [materias] = useColecaoPersistida<Materia>(CHAVES_LOCALSTORAGE.materias, materiasMock);
-  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
-  const [periodos] = useColecaoPersistida<Periodo>(CHAVES_LOCALSTORAGE.periodos, periodosMock);
+  const {
+    dados: notas,
+    carregando: carregandoNotas,
+    erro: erroNotas,
+    recarregar: recarregarNotas,
+  } = useLista<Nota>("/notas");
+  const { dados: matriculas, carregando: carregandoMatriculas } = useLista<Matricula>("/matriculas");
+  const { dados: alunos, carregando: carregandoAlunos } = useLista<Aluno>("/alunos");
+  const { dados: avaliacoes, carregando: carregandoAvaliacoes } = useLista<Avaliacao>("/avaliacoes");
+  const { dados: grades, carregando: carregandoGrades } = useLista<GradeCurricular>("/grades");
+  const { dados: materias, carregando: carregandoMaterias } = useLista<Materia>("/materias");
+  const { dados: turmas, carregando: carregandoTurmas } = useLista<Turma>("/turmas");
+  const { dados: periodos, carregando: carregandoPeriodos } = useLista<Periodo>("/periodos");
 
   const [turmaSelecionada, setTurmaSelecionada] = useState<number | "">("");
   const [gradeSelecionada, setGradeSelecionada] = useState<number | "">("");
@@ -61,11 +58,21 @@ function PaginaNotas() {
   const [avaliacaoAtivaId, setAvaliacaoAtivaId] = useState<number | null>(null);
   const [estadoLancamento, setEstadoLancamento] = useState<Record<number, EstadoLinha>>({});
   const [modalNotaGeralAberto, setModalNotaGeralAberto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  const [mensagem, setMensagem] = useState<{ texto: string; tipo: TipoToast } | null>(null);
+  const carregandoGeral =
+    carregandoNotas ||
+    carregandoMatriculas ||
+    carregandoAlunos ||
+    carregandoAvaliacoes ||
+    carregandoGrades ||
+    carregandoMaterias ||
+    carregandoTurmas ||
+    carregandoPeriodos;
 
   const gradesDaTurma = useMemo(
-    () => (turmaSelecionada === "" ? [] : grades.filter((grade) => grade.turmaIdTurma === turmaSelecionada)),
+    () => (turmaSelecionada === "" ? [] : grades.filter((grade) => grade.turmaId === turmaSelecionada)),
     [grades, turmaSelecionada]
   );
 
@@ -74,7 +81,7 @@ function PaginaNotas() {
       turmaSelecionada === ""
         ? []
         : matriculas.filter(
-            (matricula) => matricula.turmaIdTurma === turmaSelecionada && matricula.situacao === "Ativa"
+            (matricula) => matricula.turmaId === turmaSelecionada && matricula.situacao === "Ativa"
           ),
     [matriculas, turmaSelecionada]
   );
@@ -82,30 +89,32 @@ function PaginaNotas() {
   const itensGrade: ItemAvaliacaoResumo[] = useMemo(() => {
     if (turmaSelecionada === "") return [];
     const idsGradesDaTurma = new Set(gradesDaTurma.map((grade) => grade.idGrade));
+    const idsAlunosAtivos = new Set(matriculasAtivasDaTurma.map((m) => m.alunoId));
 
     return avaliacoes
       .filter(
         (avaliacao) =>
-          idsGradesDaTurma.has(avaliacao.gradeIdGrade) &&
-          (gradeSelecionada === "" || avaliacao.gradeIdGrade === gradeSelecionada) &&
-          (periodoSelecionado === "" || avaliacao.periodoIdPeriodo === periodoSelecionado)
+          idsGradesDaTurma.has(avaliacao.gradeId) &&
+          (gradeSelecionada === "" || avaliacao.gradeId === gradeSelecionada) &&
+          (periodoSelecionado === "" || avaliacao.periodoId === periodoSelecionado)
       )
       .map((avaliacao) => {
-        const grade = gradesDaTurma.find((item) => item.idGrade === avaliacao.gradeIdGrade);
+        const grade = gradesDaTurma.find((item) => item.idGrade === avaliacao.gradeId);
         const nomeMateria =
-          materias.find((materia) => materia.idMateria === grade?.materiaIdMateria)?.nomeMateria ??
+          materias.find((materia) => materia.idMateria === grade?.materiaId)?.nomeMateria ??
           "Matéria";
 
         const notasDaAvaliacao = notas.filter(
           (nota) =>
-            nota.avaliacaoIdAvaliacao === avaliacao.idAvaliacao &&
-            matriculasAtivasDaTurma.some((matricula) => matricula.idMatricula === nota.matriculaIdMatricula)
+            nota.avaliacaoId === avaliacao.idAvaliacao &&
+            idsAlunosAtivos.has(nota.alunoId)
         );
 
         const media =
           notasDaAvaliacao.length === 0
             ? null
-            : notasDaAvaliacao.reduce((soma, nota) => soma + nota.valorNota, 0) / notasDaAvaliacao.length;
+            : notasDaAvaliacao.reduce((soma, nota) => soma + Number(nota.valorNota), 0) /
+              notasDaAvaliacao.length;
 
         return {
           avaliacao,
@@ -115,7 +124,16 @@ function PaginaNotas() {
           totalAlunos: matriculasAtivasDaTurma.length,
         };
       });
-  }, [avaliacoes, gradesDaTurma, materias, notas, turmaSelecionada, gradeSelecionada, periodoSelecionado, matriculasAtivasDaTurma]);
+  }, [
+    avaliacoes,
+    gradesDaTurma,
+    materias,
+    notas,
+    turmaSelecionada,
+    gradeSelecionada,
+    periodoSelecionado,
+    matriculasAtivasDaTurma,
+  ]);
 
   const avaliacaoAtiva = useMemo(
     () => avaliacoes.find((avaliacao) => avaliacao.idAvaliacao === avaliacaoAtivaId) ?? null,
@@ -123,20 +141,22 @@ function PaginaNotas() {
   );
 
   const gradeDaAvaliacaoAtiva = useMemo(
-    () => (avaliacaoAtiva ? grades.find((grade) => grade.idGrade === avaliacaoAtiva.gradeIdGrade) : null),
+    () => (avaliacaoAtiva ? grades.find((grade) => grade.idGrade === avaliacaoAtiva.gradeId) : null),
     [grades, avaliacaoAtiva]
   );
 
   const turmaDaAvaliacaoAtiva = useMemo(
     () =>
-      gradeDaAvaliacaoAtiva ? turmas.find((turma) => turma.idTurma === gradeDaAvaliacaoAtiva.turmaIdTurma) : null,
+      gradeDaAvaliacaoAtiva
+        ? turmas.find((turma) => turma.idTurma === gradeDaAvaliacaoAtiva.turmaId)
+        : null,
     [turmas, gradeDaAvaliacaoAtiva]
   );
 
   const nomeMateriaAtiva = useMemo(
     () =>
       gradeDaAvaliacaoAtiva
-        ? materias.find((materia) => materia.idMateria === gradeDaAvaliacaoAtiva.materiaIdMateria)?.nomeMateria ??
+        ? materias.find((materia) => materia.idMateria === gradeDaAvaliacaoAtiva.materiaId)?.nomeMateria ??
           "Matéria"
         : "",
     [materias, gradeDaAvaliacaoAtiva]
@@ -147,7 +167,7 @@ function PaginaNotas() {
       gradeDaAvaliacaoAtiva
         ? matriculas.filter(
             (matricula) =>
-              matricula.turmaIdTurma === gradeDaAvaliacaoAtiva.turmaIdTurma && matricula.situacao === "Ativa"
+              matricula.turmaId === gradeDaAvaliacaoAtiva.turmaId && matricula.situacao === "Ativa"
           )
         : [],
     [matriculas, gradeDaAvaliacaoAtiva]
@@ -159,41 +179,37 @@ function PaginaNotas() {
       return;
     }
 
-    const grade = grades.find((item) => item.idGrade === avaliacoes.find((a) => a.idAvaliacao === avaliacaoAtivaId)?.gradeIdGrade);
+    const avaliacao = avaliacoes.find((a) => a.idAvaliacao === avaliacaoAtivaId);
+    const grade = grades.find((item) => item.idGrade === avaliacao?.gradeId);
     if (!grade) {
       setEstadoLancamento({});
       return;
     }
 
     const matriculasAtuais = matriculas.filter(
-      (matricula) => matricula.turmaIdTurma === grade.turmaIdTurma && matricula.situacao === "Ativa"
+      (matricula) => matricula.turmaId === grade.turmaId && matricula.situacao === "Ativa"
     );
 
     const novoEstado: Record<number, EstadoLinha> = {};
     for (const matricula of matriculasAtuais) {
       const notaExistente = notas.find(
         (nota) =>
-          nota.matriculaIdMatricula === matricula.idMatricula && nota.avaliacaoIdAvaliacao === avaliacaoAtivaId
+          nota.alunoId === matricula.alunoId && nota.avaliacaoId === avaliacaoAtivaId
       );
       novoEstado[matricula.idMatricula] = notaExistente
         ? {
-            // String(number) sempre usa ponto — é o único formato que um
-            // <input type="number"> aceita como value. toLocaleString("pt-BR")
-            // gera vírgula, que o input rejeita silenciosamente (o valor
-            // nunca aparece, dando a impressão de estado "travado").
             valorNota: String(notaExistente.valorNota),
             observacao: notaExistente.observacao ?? "",
           }
         : { valorNota: "", observacao: "" };
     }
     setEstadoLancamento(novoEstado);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [avaliacaoAtivaId]);
+  }, [avaliacaoAtivaId, avaliacoes, grades, matriculas, notas]);
 
   const linhasDiario: LinhaLancamento[] = useMemo(
     () =>
       matriculasDaAvaliacaoAtiva.flatMap((matricula) => {
-        const aluno = alunos.find((item) => item.idAluno === matricula.alunoIdAluno);
+        const aluno = alunos.find((item) => item.idAluno === matricula.alunoId);
         if (!aluno) return [];
         const estado = estadoLancamento[matricula.idMatricula] ?? { valorNota: "", observacao: "" };
         return [
@@ -232,10 +248,6 @@ function PaginaNotas() {
   }
 
   function handleAplicarNotaGeral(valor: number) {
-    // Dois formatos separados de propósito: o input é type="number" e só
-    // aceita ponto como separador decimal (String(valor) sempre gera isso);
-    // vírgula (toLocaleString pt-BR) é só para o texto do Toast, nunca para
-    // o value do input — era exatamente essa mistura que travava os campos.
     const valorParaInput = String(valor);
     const valorParaExibicao = valor.toLocaleString("pt-BR", {
       minimumFractionDigits: 1,
@@ -252,69 +264,84 @@ function PaginaNotas() {
       return novo;
     });
     setModalNotaGeralAberto(false);
-    setMensagem({
-      texto: `Nota ${valorParaExibicao} aplicada para todos os alunos da avaliação.`,
+    setFeedback({
+      mensagem: `Nota ${valorParaExibicao} aplicada a todos os alunos da avaliação.`,
       tipo: "sucesso",
     });
   }
 
-  function handleSalvarNotas() {
-    if (avaliacaoAtivaId === null) return;
+  async function handleSalvarNotas() {
+    if (avaliacaoAtivaId === null || salvando) return;
 
     const existeLinhaInvalida = linhasDiario.some((linha) => linha.invalida);
     if (existeLinhaInvalida) {
-      setMensagem({
-        texto: "Corrija as notas fora do intervalo permitido (0,0 a 10,0) antes de salvar.",
+      setFeedback({
+        mensagem: "Corrija as notas fora do intervalo permitido (0,0 a 10,0) antes de salvar.",
         tipo: "erro",
       });
       return;
     }
 
-    setNotas((atual) => {
-      let proximoIdDisponivel = atual.reduce((maior, item) => Math.max(maior, item.idNota), 0) + 1;
-      const atualizado = [...atual];
-
-      for (const matricula of matriculasDaAvaliacaoAtiva) {
+    setSalvando(true);
+    try {
+      const operacoes = matriculasDaAvaliacaoAtiva.map(async (matricula) => {
         const estado = estadoLancamento[matricula.idMatricula];
-        if (!estado || estado.valorNota.trim() === "") continue;
+        if (!estado || estado.valorNota.trim() === "") return;
 
-        const valorNota = Number(estado.valorNota.replace(",", "."));
-        const observacao = estado.observacao.trim() || undefined;
+        const valorNumerico = Number(estado.valorNota.replace(",", "."));
+        const obsFinal = estado.observacao.trim() || undefined;
 
-        const indiceExistente = atualizado.findIndex(
-          (item) =>
-            item.matriculaIdMatricula === matricula.idMatricula &&
-            item.avaliacaoIdAvaliacao === avaliacaoAtivaId
+        const notaExistente = notas.find(
+          (nota) =>
+            nota.alunoId === matricula.alunoId && nota.avaliacaoId === avaliacaoAtivaId
         );
 
-        if (indiceExistente >= 0) {
-          atualizado[indiceExistente] = {
-            ...atualizado[indiceExistente],
-            valorNota,
-            observacao,
-            atualizadoEm: agora(),
-          };
-        } else {
-          atualizado.push({
-            idNota: proximoIdDisponivel++,
-            matriculaIdMatricula: matricula.idMatricula,
-            avaliacaoIdAvaliacao: avaliacaoAtivaId,
-            valorNota,
-            observacao,
-            criadoEm: agora(),
-            atualizadoEm: agora(),
+        if (notaExistente) {
+          return atualizarNota(notaExistente.idNota, {
+            valorNota: String(valorNumerico),
+            observacao: obsFinal,
           });
         }
-      }
 
-      return atualizado;
-    });
+        return criarNota({
+          alunoId: matricula.alunoId,
+          avaliacaoId: avaliacaoAtivaId,
+          valorNota: String(valorNumerico),
+          observacao: obsFinal,
+        });
+      });
 
-    setMensagem({ texto: "Notas salvas com sucesso!", tipo: "sucesso" });
+      await Promise.all(operacoes);
+      await recarregarNotas();
+      setFeedback({ mensagem: "Notas salvas com sucesso!", tipo: "sucesso" });
+    } catch (e: unknown) {
+      setFeedback({
+        mensagem: mensagemDeErroNota(e, "Não foi possível salvar as notas."),
+        tipo: "erro",
+      });
+    } finally {
+      setSalvando(false);
+    }
   }
+
+  const fecharFeedback = useCallback(() => setFeedback(null), []);
 
   return (
     <>
+      {erroNotas && (
+        <div
+          style={{
+            margin: "0 0 16px",
+            padding: "10px 12px",
+            background: "#fbeae9",
+            color: "#a4302b",
+            borderRadius: "4px",
+          }}
+        >
+          {erroNotas}
+        </div>
+      )}
+
       {avaliacaoAtivaId === null || !avaliacaoAtiva || !turmaDaAvaliacaoAtiva ? (
         <GradeAvaliacoes
           turmas={turmas}
@@ -343,7 +370,7 @@ function PaginaNotas() {
           aoMudarValorNota={handleMudarValorNota}
           aoMudarObservacao={handleMudarObservacao}
           aoAbrirModalNotaGeral={() => setModalNotaGeralAberto(true)}
-          aoSalvar={handleSalvarNotas}
+          aoSalvar={() => void handleSalvarNotas()}
         />
       )}
 
@@ -354,11 +381,12 @@ function PaginaNotas() {
         />
       )}
 
-      {mensagem && (
+      {feedback && (
         <Toast
-          mensagem={mensagem.texto}
-          tipo={mensagem.tipo}
-          aoFechar={() => setMensagem(null)}
+          mensagem={feedback.mensagem}
+          tipo={feedback.tipo}
+          duracaoMs={feedback.tipo === "erro" ? 6000 : undefined}
+          aoFechar={fecharFeedback}
         />
       )}
     </>

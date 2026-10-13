@@ -29,8 +29,8 @@ function ValorOuVazio({ valor }: { valor: string | null | undefined }) {
 }
 
 function CardMatricula({ matricula, alunos, turmas, aoEditar, aoExcluir }: CardMatriculaProps) {
-  const aluno = alunos.find((item) => item.idAluno === matricula.alunoIdAluno);
-  const turma = turmas.find((item) => item.idTurma === matricula.turmaIdTurma);
+  const aluno = alunos.find((item) => item.idAluno === matricula.alunoId);
+  const turma = turmas.find((item) => item.idTurma === matricula.turmaId);
 
   return (
     <article className="card-matricula">
@@ -86,8 +86,8 @@ function CardMatricula({ matricula, alunos, turmas, aoEditar, aoExcluir }: CardM
       </div>
 
       <footer className="card-matricula__rodape">
-        <span>Criada em: {formatarData(matricula.criadoEm.slice(0, 10))}</span>
-        <span>Atualizada em: {formatarData(matricula.atualizadoEm.slice(0, 10))}</span>
+        <span>Criada em: {matricula.criadoEm ? formatarData(matricula.criadoEm.slice(0, 10)) : "—"}</span>
+        <span>Atualizada em: {matricula.atualizadoEm ? formatarData(matricula.atualizadoEm.slice(0, 10)) : "—"}</span>
       </footer>
     </article>
   );

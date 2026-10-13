@@ -29,7 +29,7 @@ function ListaMatriculas({
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return matriculas.filter((matricula) => {
-      const aluno = alunos.find((item) => item.idAluno === matricula.alunoIdAluno);
+      const aluno = alunos.find((item) => item.idAluno === matricula.alunoId);
 
       const combinaBusca =
         buscaNormalizada === "" ||

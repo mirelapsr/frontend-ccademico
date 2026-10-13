@@ -4,6 +4,7 @@ import "./CardPagamento.css";
 interface CardPagamentoProps {
   pagamento: Boleto;
   aluno?: Aluno;
+  aoDarBaixa: () => void;
   aoExcluir: () => void;
 }
 
@@ -26,7 +27,7 @@ function ValorOuVazio({ valor }: { valor: string | null | undefined }) {
   return <span className="card-pagamento__vazio">Não informado</span>;
 }
 
-function CardPagamento({ pagamento, aluno, aoExcluir }: CardPagamentoProps) {
+function CardPagamento({ pagamento, aluno, aoDarBaixa, aoExcluir }: CardPagamentoProps) {
   return (
     <article className="card-pagamento">
       <header className="card-pagamento__cabecalho">
@@ -46,6 +47,18 @@ function CardPagamento({ pagamento, aluno, aoExcluir }: CardPagamentoProps) {
           >
             {pagamento.situacao}
           </span>
+
+          {pagamento.situacao !== "Pago" && (
+            <button
+              type="button"
+              className="card-pagamento__botao-editar"
+              onClick={aoDarBaixa}
+              title="Marcar como Pago"
+            >
+              Dar Baixa
+            </button>
+          )}
+
           <button
             type="button"
             className="card-pagamento__botao-excluir"
@@ -67,7 +80,7 @@ function CardPagamento({ pagamento, aluno, aoExcluir }: CardPagamentoProps) {
         <div className="card-pagamento__coluna">
           <span className="card-pagamento__rotulo">Valor da mensalidade</span>
           <p className="card-pagamento__valor card-pagamento__valor--destaque">
-            {formatarMoeda(pagamento.valorMensalidade)}
+            {formatarMoeda(Number(pagamento.valorMensalidade))}
           </p>
         </div>
 

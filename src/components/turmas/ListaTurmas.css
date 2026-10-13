@@ -115,3 +115,40 @@
     flex-basis: 100%;
   }
 }
+
+.lista-turmas__erro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--perigo);
+  border-radius: 2px;
+  color: var(--perigo);
+  font-size: 0.85rem;
+  background: #fbeae9;
+}
+
+.lista-turmas__erro p {
+  margin: 0;
+}
+
+.lista-turmas__erro-acoes {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.lista-turmas__erro-acoes button {
+  background: transparent;
+  color: var(--perigo);
+  border: 1px solid var(--perigo);
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.lista-turmas__erro-acoes button:hover:not(:disabled) {
+  background: var(--perigo);
+  color: #ffffff;
+}

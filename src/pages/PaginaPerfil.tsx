@@ -13,7 +13,6 @@ function PaginaPerfil() {
 
   function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
-    // Etapa atual: sem integração com o backend ainda — salvamento só visual.
     setNovaSenha("");
     setMostrarToast(true);
   }

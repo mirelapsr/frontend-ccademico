@@ -12,8 +12,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { escolasMock, alunosMock, turmasMock, matriculasMock } from "../mock";
-import { carregarColecao, CHAVES_LOCALSTORAGE } from "../storage";
+import { useLista } from "../hooks/useLista";
 import type { Aluno, Escola, Matricula, Turma, Turno } from "../types";
 import "./Dashboard.css";
 
@@ -61,26 +60,14 @@ function CardKpi({ rotulo, valor, descricao }: CardKpiProps) {
 function Dashboard() {
   const dataHoje = useMemo(formatarDataHoje, []);
 
-  // Mesma regra de inicialização das demais páginas: lê do localStorage,
-  // e só cai para o mock.ts se a chave ainda não existir. É por isso que
-  // o Dashboard reflete escolas/alunos/turmas/matrículas criados nas
-  // outras telas, em vez de mostrar sempre os mesmos dados estáticos.
-  const escolas = useMemo<Escola[]>(
-    () => carregarColecao(CHAVES_LOCALSTORAGE.escolas, escolasMock),
-    []
-  );
-  const alunos = useMemo<Aluno[]>(
-    () => carregarColecao(CHAVES_LOCALSTORAGE.alunos, alunosMock),
-    []
-  );
-  const turmas = useMemo<Turma[]>(
-    () => carregarColecao(CHAVES_LOCALSTORAGE.turmas, turmasMock),
-    []
-  );
-  const matriculas = useMemo<Matricula[]>(
-    () => carregarColecao(CHAVES_LOCALSTORAGE.matriculas, matriculasMock),
-    []
-  );
+  const { dados: escolas, carregando: carregandoEscolas, erro: erroEscolas } = useLista<Escola>("/escolas");
+  const { dados: alunos, carregando: carregandoAlunos, erro: erroAlunos } = useLista<Aluno>("/alunos");
+  const { dados: turmas, carregando: carregandoTurmas, erro: erroTurmas } = useLista<Turma>("/turmas");
+  const { dados: matriculas, carregando: carregandoMatriculas, erro: erroMatriculas } =
+    useLista<Matricula>("/matriculas");
+
+  const carregando = carregandoEscolas || carregandoAlunos || carregandoTurmas || carregandoMatriculas;
+  const erro = erroEscolas ?? erroAlunos ?? erroTurmas ?? erroMatriculas;
 
   // --- KPIs -----------------------------------------------------------
   const totalEscolas = escolas.length;
@@ -92,8 +79,7 @@ function Dashboard() {
 
   const totalTurmas = turmas.length;
 
-  // Só entram no cálculo as turmas com capacidade informada — sem isso a
-  // "taxa de ocupação" perderia o sentido (denominador desconhecido).
+
   const turmasComCapacidade = useMemo(
     () => turmas.filter((turma) => typeof turma.capacidade === "number" && turma.capacidade > 0),
     [turmas]
@@ -108,7 +94,7 @@ function Dashboard() {
 
     const idsComCapacidade = new Set(turmasComCapacidade.map((turma) => turma.idTurma));
     const matriculasAtivasComCapacidade = matriculas.filter(
-      (matricula) => matricula.situacao === "Ativa" && idsComCapacidade.has(matricula.turmaIdTurma)
+      (matricula) => matricula.situacao === "Ativa" && idsComCapacidade.has(matricula.turmaId)
     ).length;
 
     return (matriculasAtivasComCapacidade / capacidadeTotal) * 100;
@@ -120,7 +106,7 @@ function Dashboard() {
       turmasComCapacidade.map((turma) => {
         const ocupacaoReal = matriculas.filter(
           (matricula) =>
-            matricula.turmaIdTurma === turma.idTurma && matricula.situacao === "Ativa"
+            matricula.turmaId === turma.idTurma && matricula.situacao === "Ativa"
         ).length;
 
         return {
@@ -151,17 +137,23 @@ function Dashboard() {
         <p className="dashboard__data">{dataHoje}</p>
       </header>
 
+      {erro && (
+        <p className="dashboard__erro" role="alert">
+          {erro}
+        </p>
+      )}
+
       <section className="dashboard__kpis" aria-label="Indicadores gerais">
-        <CardKpi rotulo="Total de Escolas" valor={String(totalEscolas)} />
+        <CardKpi rotulo="Total de Escolas" valor={carregando ? "—" : String(totalEscolas)} />
         <CardKpi
           rotulo="Alunos Ativos"
-          valor={String(totalAlunosAtivos)}
+          valor={carregando ? "—" : String(totalAlunosAtivos)}
           descricao={`de ${alunos.length} cadastrados`}
         />
-        <CardKpi rotulo="Total de Turmas" valor={String(totalTurmas)} />
+        <CardKpi rotulo="Total de Turmas" valor={carregando ? "—" : String(totalTurmas)} />
         <CardKpi
           rotulo="Taxa Média de Ocupação"
-          valor={`${taxaOcupacaoMedia.toFixed(1)}%`}
+          valor={carregando ? "—" : `${taxaOcupacaoMedia.toFixed(1)}%`}
           descricao="matrículas ativas / capacidade"
         />
       </section>
@@ -171,7 +163,7 @@ function Dashboard() {
           <h2>Ocupação das Turmas</h2>
           {dadosOcupacao.length === 0 ? (
             <p className="dashboard__grafico-vazio">
-              Nenhuma turma com capacidade informada ainda.
+              {carregando ? "Carregando turmas..." : "Nenhuma turma com capacidade informada ainda."}
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
@@ -198,7 +190,9 @@ function Dashboard() {
         <div className="dashboard__grafico dashboard__grafico--secundario">
           <h2>Turmas por Turno</h2>
           {dadosPorTurno.length === 0 ? (
-            <p className="dashboard__grafico-vazio">Nenhuma turma cadastrada ainda.</p>
+            <p className="dashboard__grafico-vazio">
+              {carregando ? "Carregando turmas..." : "Nenhuma turma cadastrada ainda."}
+            </p>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>

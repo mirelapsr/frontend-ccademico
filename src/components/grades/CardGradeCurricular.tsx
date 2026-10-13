@@ -3,16 +3,25 @@ import "./CardGradeCurricular.css";
 
 interface CardGradeCurricularProps {
   grade: GradeCurricular;
-  /** Listas completas — o card resolve turma, matéria e professor pelas FKs. */
   turmas: Turma[];
   materias: Materia[];
   professores: Professor[];
-  aoEditar: () => void;
-  aoExcluir: () => void;
+  aoEditar: (idGrade: number) => void;
+  aoExcluir: (idGrade: number) => void;
 }
 
-function formatarData(iso: string): string {
-  return new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("pt-BR");
+function formatarDataHora(dataIso: string | null | undefined): string {
+  if (!dataIso) return "—";
+  try {
+    const data = new Date(dataIso);
+    if (Number.isNaN(data.getTime())) return dataIso;
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(data);
+  } catch {
+    return dataIso;
+  }
 }
 
 function ValorOuVazio({ valor }: { valor: string | number | null | undefined }) {
@@ -28,10 +37,14 @@ function CardGradeCurricular({
   aoEditar,
   aoExcluir,
 }: CardGradeCurricularProps) {
-  const turma = turmas.find((item) => item.idTurma === grade.turmaIdTurma);
-  const materia = materias.find((item) => item.idMateria === grade.materiaIdMateria);
-  const professor = professores.find((item) => item.idProfessor === grade.professorIdProfessor);
+  const idGrade = grade.idGrade;
 
+  const turma = turmas.find((item) => item.idTurma === grade.turmaId);
+  const materia = materias.find((item) => item.idMateria === grade.materiaId);
+  const professor = professores.find((item) => item.idProfessor === grade.professorId);
+
+  const dataCriacao = grade.criadoEm;
+  const dataAtualizacao = grade.atualizadoEm;
   return (
     <article className="card-grade">
       <header className="card-grade__cabecalho">
@@ -46,14 +59,18 @@ function CardGradeCurricular({
         </div>
 
         <div className="card-grade__acoes">
-          <span className="card-grade__selo-ano">{grade.anoLetivo}</span>
-          <button type="button" className="card-grade__botao-editar" onClick={aoEditar}>
+          <span className="card-grade__selo-ano">{turma?.anoLetivo ?? "—"}</span>
+          <button
+            type="button"
+            className="card-grade__botao-editar"
+            onClick={() => aoEditar(idGrade)}
+          >
             Editar
           </button>
           <button
             type="button"
             className="card-grade__botao-excluir"
-            onClick={aoExcluir}
+            onClick={() => aoExcluir(idGrade)}
             aria-label={`Excluir grade de ${materia?.nomeMateria ?? "matéria"} da turma ${turma?.nomeTurma ?? ""}`}
             title="Excluir"
           >
@@ -79,7 +96,7 @@ function CardGradeCurricular({
 
         <div className="card-grade__coluna">
           <span className="card-grade__rotulo">Ano letivo</span>
-          <p className="card-grade__valor">{grade.anoLetivo}</p>
+          <p className="card-grade__valor">{turma?.anoLetivo ?? "—"}</p>
         </div>
 
         <div className="card-grade__coluna">
@@ -87,6 +104,8 @@ function CardGradeCurricular({
           <p className="card-grade__valor">
             {grade.cargaHorariaSemanal ? (
               `${grade.cargaHorariaSemanal}h/semana`
+            ) : materia?.cargaHoraria ? (
+              `${materia.cargaHoraria}h total`
             ) : (
               <span className="card-grade__vazio">Não informado</span>
             )}
@@ -94,12 +113,14 @@ function CardGradeCurricular({
         </div>
       </div>
 
-      {(grade.criadoEm || grade.atualizadoEm) && (
-        <footer className="card-grade__rodape">
-          {grade.criadoEm && <span>Criada em: {formatarData(grade.criadoEm)}</span>}
-          {grade.atualizadoEm && <span>Atualizada em: {formatarData(grade.atualizadoEm)}</span>}
-        </footer>
-      )}
+      <footer className="card-grade__rodape">
+        {dataCriacao && (
+          <span>Adicionado em: {formatarDataHora(dataCriacao)}</span>
+        )}
+        {dataAtualizacao && (
+          <span>Alterado em: {formatarDataHora(dataAtualizacao)}</span>
+        )}
+      </footer>
     </article>
   );
 }

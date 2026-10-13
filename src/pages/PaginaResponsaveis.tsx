@@ -1,118 +1,135 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ListaResponsaveis from "../components/responsaveis/ListaResponsaveis";
 import FormularioResponsavel from "../components/responsaveis/FormularioResponsavel";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
-import { responsaveisMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+import {
+  atualizarResponsavel,
+  criarResponsavel,
+  ehErroDeVinculo,
+  excluirResponsavel,
+  listarResponsaveis,
+  mensagemDeErroResponsavel,
+} from "../services/responsavelService";
 import type { Responsavel, ResponsavelEntrada } from "../types";
 
-type Tela = "lista" | "formulario";
-
-function proximoId(responsaveis: Responsavel[]): number {
-  return (
-    responsaveis.reduce((maior, responsavel) => Math.max(maior, responsavel.idResponsavel), 0) + 1
-  );
-}
-
-function agora(): string {
-  return new Date().toISOString();
-}
-
 function PaginaResponsaveis() {
-  const [responsaveis, setResponsaveis] = useColecaoPersistida<Responsavel>(
-    CHAVES_LOCALSTORAGE.responsaveis,
-    responsaveisMock
-  );
+  const [responsaveis, setResponsaveis] = useState<Responsavel[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const [telaAtual, setTelaAtual] = useState<Tela>("lista");
+  const [modalAberto, setModalAberto] = useState(false);
   const [responsavelEmEdicao, setResponsavelEmEdicao] = useState<Responsavel | null>(null);
 
   const [responsavelParaExcluir, setResponsavelParaExcluir] = useState<Responsavel | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      setResponsaveis(await listarResponsaveis());
+    } catch (e) {
+      setErro(mensagemDeErroResponsavel(e, "Não foi possível carregar os responsáveis."));
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
   function abrirNovoResponsavel() {
     setResponsavelEmEdicao(null);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function abrirEdicaoResponsavel(idResponsavel: number) {
     const responsavel = responsaveis.find((item) => item.idResponsavel === idResponsavel) ?? null;
+    if (!responsavel) return;
     setResponsavelEmEdicao(responsavel);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
-  function cancelarFormulario() {
+  const cancelarFormulario = useCallback(() => {
     setResponsavelEmEdicao(null);
-    setTelaAtual("lista");
-  }
+    setModalAberto(false);
+  }, []);
 
-  function adicionarResponsavel(dados: ResponsavelEntrada) {
-    const novoResponsavel: Responsavel = {
-      ...dados,
-      idResponsavel: proximoId(responsaveis),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setResponsaveis((atual) => [...atual, novoResponsavel]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Responsável criado com sucesso!");
-  }
-
-  function atualizarResponsavel(idResponsavel: number, dados: ResponsavelEntrada) {
-    setResponsaveis((atual) =>
-      atual.map((responsavel) =>
-        responsavel.idResponsavel === idResponsavel
-          ? { ...responsavel, ...dados, atualizadoEm: agora() }
-          : responsavel
-      )
-    );
-    setResponsavelEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Responsável atualizado com sucesso!");
-  }
-
-  function handleSalvarFormulario(dados: ResponsavelEntrada) {
-    if (responsavelEmEdicao) {
-      atualizarResponsavel(responsavelEmEdicao.idResponsavel, dados);
-    } else {
-      adicionarResponsavel(dados);
+  async function salvarFormulario(dados: ResponsavelEntrada): Promise<void> {
+    try {
+      if (responsavelEmEdicao) {
+        const atualizado = await atualizarResponsavel(responsavelEmEdicao.idResponsavel, dados);
+        setResponsaveis((atual) =>
+          atual.map((r) => (r.idResponsavel === atualizado.idResponsavel ? atualizado : r))
+        );
+        setMensagemSucesso(`Responsável "${atualizado.nomeResp}" atualizado com sucesso!`);
+      } else {
+        const novo = await criarResponsavel(dados);
+        setResponsaveis((atual) => [...atual, novo]);
+        setMensagemSucesso(`Responsável "${novo.nomeResp}" cadastrado com sucesso!`);
+      }
+      cancelarFormulario();
+    } catch (e) {
+      throw new Error(mensagemDeErroResponsavel(e, "Não foi possível salvar o responsável."));
     }
   }
 
   function pedirConfirmacaoExclusao(idResponsavel: number) {
-    const responsavel = responsaveis.find((item) => item.idResponsavel === idResponsavel) ?? null;
-    setResponsavelParaExcluir(responsavel);
-  }
-
-  function confirmarExclusao() {
-    if (!responsavelParaExcluir) return;
-    setResponsaveis((atual) =>
-      atual.filter((responsavel) => responsavel.idResponsavel !== responsavelParaExcluir.idResponsavel)
+    setResponsavelParaExcluir(
+      responsaveis.find((item) => item.idResponsavel === idResponsavel) ?? null
     );
-    setResponsavelParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
   }
 
-  function cancelarExclusao() {
-    setResponsavelParaExcluir(null);
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setResponsavelParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!responsavelParaExcluir || excluindo) return;
+    const alvo = responsavelParaExcluir;
+
+    setExcluindo(true);
+    setErro(null);
+    try {
+      await excluirResponsavel(alvo.idResponsavel);
+      setResponsaveis((atual) => atual.filter((r) => r.idResponsavel !== alvo.idResponsavel));
+      setMensagemSucesso(`Responsável "${alvo.nomeResp}" excluído com sucesso!`);
+    } catch (e) {
+      setErro(
+        ehErroDeVinculo(e)
+          ? `Não é possível excluir "${alvo.nomeResp}": o responsável está vinculado a alunos ou registros financeiros ativos. Remova esses vínculos e tente novamente.`
+          : mensagemDeErroResponsavel(e, "Não foi possível excluir o responsável.")
+      );
+    } finally {
+      setExcluindo(false);
+      setResponsavelParaExcluir(null);
+    }
   }
+
+  const fecharToast = useCallback(() => setMensagemSucesso(null), []);
 
   return (
     <>
-      {telaAtual === "lista" ? (
+      {!modalAberto ? (
         <ListaResponsaveis
           responsaveis={responsaveis}
+          carregando={carregando}
+          erro={erro}
+          aoDispensarErro={() => setErro(null)}
+          aoRecarregar={() => void carregar()}
           aoNovoResponsavel={abrirNovoResponsavel}
           aoEditarResponsavel={abrirEdicaoResponsavel}
           aoExcluirResponsavel={pedirConfirmacaoExclusao}
         />
       ) : (
         <FormularioResponsavel
+          key={responsavelEmEdicao?.idResponsavel ?? "novo"}
           responsavelEditando={responsavelEmEdicao}
-          salvar={handleSalvarFormulario}
+          salvar={salvarFormulario}
           cancelar={cancelarFormulario}
         />
       )}
@@ -120,20 +137,20 @@ function PaginaResponsaveis() {
       {responsavelParaExcluir && (
         <ModalConfirmacao
           titulo="Excluir responsável"
-          mensagem={`Tem certeza que deseja excluir "${responsavelParaExcluir.nomeResp}"? Essa ação não pode ser desfeita.`}
+          mensagem={
+            excluindo
+              ? "Excluindo..."
+              : `Tem certeza de que deseja excluir "${responsavelParaExcluir.nomeResp}"? Esta ação não pode ser desfeita.`
+          }
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
       {mensagemSucesso && (
-        <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
-        />
+        <Toast mensagem={mensagemSucesso} tipo="sucesso" aoFechar={fecharToast} />
       )}
     </>
   );

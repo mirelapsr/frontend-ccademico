@@ -1,20 +1,13 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import VisaoTurmaBoletim from "../components/boletins/VisaoTurmaBoletim";
 import BoletimAluno, { type AlteracaoNota } from "../components/boletins/BoletimAluno";
 import Toast, { type TipoToast } from "../components/ui/Toast";
+import { useLista } from "../hooks/useLista";
 import {
-  alunosMock,
-  avaliacoesMock,
-  frequenciasMock,
-  gradesCurricularesMock,
-  materiasMock,
-  matriculasMock,
-  notasMock,
-  periodosMock,
-  turmasMock,
-} from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+  atualizarNota,
+  criarNota,
+  mensagemDeErroNota,
+} from "../services/notaService";
 import type {
   Aluno,
   Avaliacao,
@@ -27,88 +20,105 @@ import type {
   Turma,
 } from "../types";
 
-/**
- * Boletim em dois níveis: (1) turma → cards dos alunos; (2) boletim do aluno
- * com edição inline das notas. A única coleção escrita aqui é `notas`.
- */
 function PaginaBoletins() {
-  const [notas, setNotas] = useColecaoPersistida<Nota>(CHAVES_LOCALSTORAGE.notas, notasMock);
-  const [matriculas] = useColecaoPersistida<Matricula>(CHAVES_LOCALSTORAGE.matriculas, matriculasMock);
-  const [alunos] = useColecaoPersistida<Aluno>(CHAVES_LOCALSTORAGE.alunos, alunosMock);
-  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
-  const [periodos] = useColecaoPersistida<Periodo>(CHAVES_LOCALSTORAGE.periodos, periodosMock);
-  const [materias] = useColecaoPersistida<Materia>(CHAVES_LOCALSTORAGE.materias, materiasMock);
-  const [grades] = useColecaoPersistida<GradeCurricular>(
-    CHAVES_LOCALSTORAGE.gradesCurriculares,
-    gradesCurricularesMock
-  );
-  const [avaliacoes] = useColecaoPersistida<Avaliacao>(CHAVES_LOCALSTORAGE.avaliacoes, avaliacoesMock);
-  const [frequencias] = useColecaoPersistida<Frequencia>(CHAVES_LOCALSTORAGE.frequencias, frequenciasMock);
+  const { dados: notas, recarregar: recarregarNotas, carregando: carregandoNotas } = useLista<Nota>("/notas");
+  const { dados: matriculas, carregando: carregandoMatriculas } = useLista<Matricula>("/matriculas");
+  const { dados: alunos, carregando: carregandoAlunos } = useLista<Aluno>("/alunos");
+  const { dados: turmas, carregando: carregandoTurmas } = useLista<Turma>("/turmas");
+  const { dados: periodos, carregando: carregandoPeriodos } = useLista<Periodo>("/periodos");
+  const { dados: materias, carregando: carregandoMaterias } = useLista<Materia>("/materias");
+  const { dados: grades, carregando: carregandoGrades } = useLista<GradeCurricular>("/grades");
+  const { dados: avaliacoes, carregando: carregandoAvaliacoes } = useLista<Avaliacao>("/avaliacoes");
+  const { dados: frequencias, carregando: carregandoFrequencias } = useLista<Frequencia>("/frequencias");
 
   const [turmaId, setTurmaId] = useState<number | null>(null);
-  const [periodoId, setPeriodoId] = useState<number | null>(
-    () => (periodos.find((periodo) => periodo.situacao === "Ativo") ?? periodos[0])?.idPeriodo ?? null
-  );
+  const [periodoIdManual, setPeriodoIdManual] = useState<number | null>(null);
   const [matriculaAberta, setMatriculaAberta] = useState<number | null>(null);
+  const [salvando, setSalvando] = useState(false);
   const [toast, setToast] = useState<{ mensagem: string; tipo: TipoToast } | null>(null);
+
+  const periodoAtivo = useMemo(
+    () => periodos.find((p) => p.situacao === "Ativo") ?? periodos[0] ?? null,
+    [periodos]
+  );
+
+  const periodoId = periodoIdManual ?? periodoAtivo?.idPeriodo ?? null;
 
   function mudarTurma(idTurma: number | null) {
     setTurmaId(idTurma);
     setMatriculaAberta(null);
   }
 
-  /**
-   * Upsert por (matrícula, avaliação) — mesma regra de `uq_nota_matricula_avaliacao`:
-   * atualiza a nota existente (mantendo o id), cria só se não existir e remove
-   * quando o campo foi limpo. Nunca gera duplicata.
-   */
-  function salvarNotas(idMatricula: number, alteracoes: AlteracaoNota[]) {
-    const novoValor = new Map(alteracoes.map((alteracao) => [alteracao.avaliacaoId, alteracao.valor]));
-    const agora = new Date().toISOString();
+  async function salvarNotas(alunoIdAlvo: number, alteracoes: AlteracaoNota[]) {
+    if (salvando) return;
+    setSalvando(true);
 
-    setNotas((atual) => {
-      const jaTratadas = new Set<number>();
+    try {
+      const operacoes = alteracoes.map(async ({ avaliacaoId, valor }) => {
+        const notaExistente = notas.find(
+          (n) => n.alunoId === alunoIdAlvo && n.avaliacaoId === avaliacaoId
+        );
 
-      const resultado = atual.flatMap((nota) => {
-        if (nota.matriculaIdMatricula !== idMatricula || !novoValor.has(nota.avaliacaoIdAvaliacao)) {
-          return [nota];
+        if (valor === null) {
+          return;
         }
-        if (jaTratadas.has(nota.avaliacaoIdAvaliacao)) return []; // descarta duplicata pré-existente
-        jaTratadas.add(nota.avaliacaoIdAvaliacao);
 
-        const valor = novoValor.get(nota.avaliacaoIdAvaliacao) ?? null;
-        return valor === null ? [] : [{ ...nota, valorNota: valor, atualizadoEm: agora }];
+        if (notaExistente) {
+          return atualizarNota(notaExistente.idNota, {
+            valorNota: String(valor),
+          });
+        }
+
+        return criarNota({
+          alunoId: alunoIdAlvo,
+          avaliacaoId,
+          valorNota: String(valor),
+        });
       });
 
-      let proximoId = atual.reduce((maior, nota) => Math.max(maior, nota.idNota), 0) + 1;
-      for (const [avaliacaoId, valor] of novoValor) {
-        if (valor === null || jaTratadas.has(avaliacaoId)) continue;
-        resultado.push({
-          idNota: proximoId++,
-          matriculaIdMatricula: idMatricula,
-          avaliacaoIdAvaliacao: avaliacaoId,
-          valorNota: valor,
-          criadoEm: agora,
-          atualizadoEm: agora,
-        });
-      }
-
-      return resultado;
-    });
-
-    setToast({ mensagem: "Boletim salvo com sucesso!", tipo: "sucesso" });
+      await Promise.all(operacoes);
+      await recarregarNotas();
+      setToast({ mensagem: "Boletim salvo com sucesso!", tipo: "sucesso" });
+    } catch (e: unknown) {
+      setToast({
+        mensagem: mensagemDeErroNota(e, "Erro ao salvar notas do boletim."),
+        tipo: "erro",
+      });
+    } finally {
+      setSalvando(false);
+    }
   }
 
   const matricula = matriculas.find((item) => item.idMatricula === matriculaAberta) ?? null;
-  const aluno = matricula ? alunos.find((item) => item.idAluno === matricula.alunoIdAluno) : undefined;
+  const aluno = matricula ? alunos.find((item) => item.idAluno === matricula.alunoId) : undefined;
   const turma = turmas.find((item) => item.idTurma === turmaId);
   const periodo = periodos.find((item) => item.idPeriodo === periodoId);
+
+  const carregandoGeral =
+    carregandoNotas ||
+    carregandoMatriculas ||
+    carregandoAlunos ||
+    carregandoTurmas ||
+    carregandoPeriodos ||
+    carregandoMaterias ||
+    carregandoGrades ||
+    carregandoAvaliacoes ||
+    carregandoFrequencias;
+
+  const fecharToast = useCallback(() => setToast(null), []);
+
+  if (carregandoGeral && turmas.length === 0) {
+    return (
+      <div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+        <p>Carregando dados do boletim...</p>
+      </div>
+    );
+  }
 
   return (
     <>
       {matricula && aluno && turma && periodo ? (
         <BoletimAluno
-          // Remonta ao trocar de aluno/período para reiniciar o rascunho de notas.
           key={`${matricula.idMatricula}-${periodo.idPeriodo}`}
           aluno={aluno}
           matricula={matricula}
@@ -120,7 +130,7 @@ function PaginaBoletins() {
           notas={notas}
           frequencias={frequencias}
           aoVoltar={() => setMatriculaAberta(null)}
-          aoSalvar={(alteracoes) => salvarNotas(matricula.idMatricula, alteracoes)}
+          aoSalvar={(alteracoes) => void salvarNotas(aluno.idAluno, alteracoes)}
           aoNotificar={(mensagem, tipo) => setToast({ mensagem, tipo })}
         />
       ) : (
@@ -134,12 +144,12 @@ function PaginaBoletins() {
           turmaId={turmaId}
           periodoId={periodoId}
           aoMudarTurma={mudarTurma}
-          aoMudarPeriodo={setPeriodoId}
+          aoMudarPeriodo={setPeriodoIdManual}
           aoAbrirBoletim={setMatriculaAberta}
         />
       )}
 
-      {toast && <Toast mensagem={toast.mensagem} tipo={toast.tipo} aoFechar={() => setToast(null)} />}
+      {toast && <Toast mensagem={toast.mensagem} tipo={toast.tipo} aoFechar={fecharToast} />}
     </>
   );
 }

@@ -13,7 +13,6 @@ import {
 } from "../../utils/boletim";
 import "./BoletimAluno.css";
 
-/** `valor: null` significa "campo limpo" — a nota gravada deve ser removida. */
 export interface AlteracaoNota {
   avaliacaoId: number;
   valor: number | null;
@@ -60,23 +59,22 @@ function BoletimAluno({
   aoSalvar,
   aoNotificar,
 }: BoletimAlunoProps) {
-  // Uma linha por disciplina da grade da turma, já com as avaliações do período.
   const linhas = useMemo(
     () =>
       grades
-        .filter((grade) => grade.turmaIdTurma === turma.idTurma)
+        .filter((grade) => grade.turmaId === turma.idTurma)
         .map((grade) => ({
           grade,
           nomeMateria:
-            materias.find((materia) => materia.idMateria === grade.materiaIdMateria)?.nomeMateria ??
+            materias.find((materia) => materia.idMateria === grade.materiaId)?.nomeMateria ??
             "Matéria não encontrada",
           avaliacoes: ordenarAvaliacoes(
             avaliacoes.filter(
               (avaliacao) =>
-                avaliacao.gradeIdGrade === grade.idGrade && avaliacao.periodoIdPeriodo === periodo.idPeriodo
+                avaliacao.gradeId === grade.idGrade && avaliacao.periodoId === periodo.idPeriodo
             )
           ),
-          faltas: contarFaltas(frequencias, matricula.idMatricula, new Set([grade.idGrade]), periodo),
+          faltas: contarFaltas(frequencias, matricula.idMatricula, new Set([grade.idGrade]), periodo, aluno.idAluno),
         }))
         .sort((a, b) => a.nomeMateria.localeCompare(b.nomeMateria, "pt-BR")),
     [grades, materias, avaliacoes, frequencias, turma.idTurma, periodo, matricula.idMatricula]
@@ -167,7 +165,7 @@ function BoletimAluno({
                 const media = calcularMediaPonderada(
                   avaliacoesDaLinha.map((avaliacao) => ({
                     valor: lerCampo(rascunho[avaliacao.idAvaliacao] ?? "").valor,
-                    peso: avaliacao.peso,
+                    peso: Number(avaliacao.peso),
                   }))
                 );
                 const nivel = situacaoPelaMedia(media);

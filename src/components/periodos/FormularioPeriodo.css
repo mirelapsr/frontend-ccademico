@@ -95,3 +95,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+.formulario-periodo__acoes button:disabled,
+.formulario-periodo__campo input:disabled,
+.formulario-periodo__campo select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

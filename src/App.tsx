@@ -20,6 +20,7 @@ import PaginaAvaliacoes from "./pages/PaginaAvaliacoes";
 import PaginaFrequencias from "./pages/PaginaFrequencias";
 import PaginaNotas from "./pages/PaginaNotas";
 import PaginaBoletins from "./pages/PaginaBoletins";
+import './services/api';
 
 function App() {
   return (

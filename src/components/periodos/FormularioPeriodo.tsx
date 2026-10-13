@@ -1,10 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type { Periodo, PeriodoEntrada, SituacaoPeriodo } from "../../types";
 import "./FormularioPeriodo.css";
 
 interface FormularioPeriodoProps {
   periodoEditando?: Periodo | null;
-  salvar: (dados: PeriodoEntrada) => void;
+  /**
+   * Persiste na API. Deve LANÇAR em caso de falha: o formulário captura,
+   * mostra a mensagem no topo e continua aberto com os dados preenchidos.
+   */
+  salvar: (dados: PeriodoEntrada) => Promise<void>;
   cancelar: () => void;
 }
 
@@ -19,9 +23,14 @@ function FormularioPeriodo({ periodoEditando, salvar, cancelar }: FormularioPeri
     periodoEditando?.situacao ?? "Ativo"
   );
   const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
 
-  function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  // `useState` é assíncrono: o ref bloqueia o 2º clique no mesmo instante.
+  const emEnvioRef = useRef(false);
+
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (emEnvioRef.current) return;
 
     if (!nomePeriodo.trim() || !ano || !dataInicio || !dataFim) {
       setErro("Nome, ano e as duas datas são obrigatórios.");
@@ -33,14 +42,29 @@ function FormularioPeriodo({ periodoEditando, salvar, cancelar }: FormularioPeri
       return;
     }
 
+    if (!Number.isInteger(Number(ano)) || Number(ano) < 2000 || Number(ano) > 2100) {
+      setErro("O ano letivo deve estar entre 2000 e 2100.");
+      return;
+    }
+
+    emEnvioRef.current = true;
+    setEnviando(true);
     setErro(null);
-    salvar({
-      nomePeriodo: nomePeriodo.trim(),
-      ano: Number(ano),
-      dataInicio,
-      dataFim,
-      situacao,
-    });
+    try {
+      await salvar({
+        nomePeriodo: nomePeriodo.trim(),
+        ano: Number(ano),
+        dataInicio,
+        dataFim,
+        situacao,
+      });
+      // Sucesso: a página fecha o formulário.
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível salvar o período.");
+    } finally {
+      emEnvioRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (
@@ -50,12 +74,20 @@ function FormularioPeriodo({ periodoEditando, salvar, cancelar }: FormularioPeri
       </header>
 
       <form className="formulario-periodo__form" onSubmit={handleSubmit} noValidate>
+        {erro && (
+          <p className="formulario-periodo__erro" role="alert">
+            {erro}
+          </p>
+        )}
+
         <label className="formulario-periodo__campo formulario-periodo__campo--largo">
           <span>Nome do período *</span>
           <input
             value={nomePeriodo}
             onChange={(evento) => setNomePeriodo(evento.target.value)}
+            maxLength={30}
             placeholder="Ex.: 1º Bimestre"
+            disabled={enviando}
           />
         </label>
 
@@ -65,6 +97,7 @@ function FormularioPeriodo({ periodoEditando, salvar, cancelar }: FormularioPeri
             type="number"
             value={ano}
             onChange={(evento) => setAno(Number(evento.target.value))}
+            disabled={enviando}
           />
         </label>
 
@@ -73,6 +106,7 @@ function FormularioPeriodo({ periodoEditando, salvar, cancelar }: FormularioPeri
           <select
             value={situacao}
             onChange={(evento) => setSituacao(evento.target.value as SituacaoPeriodo)}
+            disabled={enviando}
           >
             <option value="Ativo">Ativo</option>
             <option value="Encerrado">Encerrado</option>
@@ -85,6 +119,7 @@ function FormularioPeriodo({ periodoEditando, salvar, cancelar }: FormularioPeri
             type="date"
             value={dataInicio}
             onChange={(evento) => setDataInicio(evento.target.value)}
+            disabled={enviando}
           />
         </label>
 
@@ -94,25 +129,21 @@ function FormularioPeriodo({ periodoEditando, salvar, cancelar }: FormularioPeri
             type="date"
             value={dataFim}
             onChange={(evento) => setDataFim(evento.target.value)}
+            disabled={enviando}
           />
         </label>
-
-        {erro && (
-          <p className="formulario-periodo__erro" role="alert">
-            {erro}
-          </p>
-        )}
 
         <div className="formulario-periodo__acoes">
           <button
             type="button"
             className="formulario-periodo__botao-cancelar"
             onClick={cancelar}
+            disabled={enviando}
           >
             Cancelar
           </button>
-          <button type="submit" className="formulario-periodo__botao-salvar">
-            {periodoEditando ? "Salvar alterações" : "Cadastrar período"}
+          <button type="submit" className="formulario-periodo__botao-salvar" disabled={enviando}>
+            {enviando ? "Salvando..." : periodoEditando ? "Salvar alterações" : "Cadastrar período"}
           </button>
         </div>
       </form>

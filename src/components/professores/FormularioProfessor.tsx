@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type { Escola, Professor, ProfessorEntrada, SituacaoProfessor } from "../../types";
 import { limparCpf } from "../../utils/formatadores";
 import "./FormularioProfessor.css";
@@ -7,7 +7,7 @@ interface FormularioProfessorProps {
   professorEditando?: Professor | null;
   /** Escolas disponíveis no localStorage, para o <select> de vínculo. */
   escolas: Escola[];
-  salvar: (dados: ProfessorEntrada) => void;
+  salvar: (dados: ProfessorEntrada) => Promise<void>;
   cancelar: () => void;
 }
 
@@ -26,30 +26,53 @@ function FormularioProfessor({
   const [situacao, setSituacao] = useState<SituacaoProfessor>(
     professorEditando?.situacao ?? "Ativo"
   );
-  const [escolaIdEscola, setEscolaIdEscola] = useState(
-    professorEditando?.escolaIdEscola ?? escolas[0]?.idEscola ?? 0
+  const [escolaId, setEscolaId] = useState(
+    professorEditando?.escolaId ?? escolas[0]?.idEscola ?? 0
   );
   const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const emEnvioRef = useRef(false);
 
-  function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (emEnvioRef.current) return;
 
-    if (!nomeProf.trim() || !escolaIdEscola) {
+    if (!nomeProf.trim() || !escolaId) {
       setErro("Nome e escola são obrigatórios.");
       return;
     }
 
+    const cpfDigitos = limparCpf(cpfProf);
+    if (cpfProf.trim() && cpfDigitos.length !== 11) {
+      setErro("O CPF deve ter 11 dígitos.");
+      return;
+    }
+    const cepDigitos = cepProf.replace(/\D/g, "");
+    if (cepProf.trim() && cepDigitos.length !== 8) {
+      setErro("O CEP deve ter 8 dígitos.");
+      return;
+    }
+
+    emEnvioRef.current = true;
+    setEnviando(true);
     setErro(null);
-    salvar({
-      nomeProf: nomeProf.trim(),
-      cpfProf: cpfProf.trim() ? limparCpf(cpfProf) : null,
-      telefoneProf: telefoneProf.trim() || null,
-      emailProf: emailProf.trim() || null,
-      cepProf: cepProf.trim() || null,
-      enderecoProf: enderecoProf.trim() || null,
-      situacao,
-      escolaIdEscola: Number(escolaIdEscola),
-    });
+    try {
+      await salvar({
+        nomeProf: nomeProf.trim(),
+        cpfProf: cpfProf.trim() ? cpfDigitos : null,
+        telefoneProf: telefoneProf.trim() || null,
+        emailProf: emailProf.trim() || null,
+        cepProf: cepProf.trim() ? cepDigitos : null,
+        enderecoProf: enderecoProf.trim() || null,
+        situacao,
+        escolaId: Number(escolaId),
+      });
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível salvar o professor.");
+    } finally {
+      emEnvioRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (
@@ -59,11 +82,19 @@ function FormularioProfessor({
       </header>
 
       <form className="formulario-professor__form" onSubmit={handleSubmit} noValidate>
+        {erro && (
+          <p className="formulario-professor__erro" role="alert">
+            {erro}
+          </p>
+        )}
+
         <label className="formulario-professor__campo formulario-professor__campo--largo">
           <span>Nome completo *</span>
           <input
             value={nomeProf}
             onChange={(evento) => setNomeProf(evento.target.value)}
+            maxLength={100}
+            disabled={enviando}
             placeholder="Ex.: Maria da Silva Rocha"
           />
         </label>
@@ -73,6 +104,7 @@ function FormularioProfessor({
           <input
             value={cpfProf}
             onChange={(evento) => setCpfProf(evento.target.value)}
+            disabled={enviando}
             placeholder="000.000.000-00"
           />
         </label>
@@ -82,6 +114,8 @@ function FormularioProfessor({
           <input
             value={telefoneProf}
             onChange={(evento) => setTelefoneProf(evento.target.value)}
+            maxLength={13}
+            disabled={enviando}
             placeholder="86 99999-0000"
           />
         </label>
@@ -92,6 +126,8 @@ function FormularioProfessor({
             type="email"
             value={emailProf}
             onChange={(evento) => setEmailProf(evento.target.value)}
+            maxLength={100}
+            disabled={enviando}
             placeholder="nome@escola.edu.br"
           />
         </label>
@@ -101,6 +137,8 @@ function FormularioProfessor({
           <input
             value={cepProf}
             onChange={(evento) => setCepProf(evento.target.value)}
+            maxLength={9}
+            disabled={enviando}
             placeholder="64000-000"
           />
         </label>
@@ -110,6 +148,8 @@ function FormularioProfessor({
           <input
             value={enderecoProf}
             onChange={(evento) => setEnderecoProf(evento.target.value)}
+            maxLength={200}
+            disabled={enviando}
             placeholder="Rua, número — bairro, cidade/UF"
           />
         </label>
@@ -119,6 +159,7 @@ function FormularioProfessor({
           <select
             value={situacao}
             onChange={(evento) => setSituacao(evento.target.value as SituacaoProfessor)}
+            disabled={enviando}
           >
             <option value="Ativo">Ativo</option>
             <option value="Inativo">Inativo</option>
@@ -128,8 +169,9 @@ function FormularioProfessor({
         <label className="formulario-professor__campo">
           <span>Escola *</span>
           <select
-            value={escolaIdEscola}
-            onChange={(evento) => setEscolaIdEscola(Number(evento.target.value))}
+            value={escolaId}
+            onChange={(evento) => setEscolaId(Number(evento.target.value))}
+            disabled={enviando}
           >
             {escolas.length === 0 && <option value={0}>Nenhuma escola cadastrada</option>}
             {escolas.map((escola) => (
@@ -140,22 +182,17 @@ function FormularioProfessor({
           </select>
         </label>
 
-        {erro && (
-          <p className="formulario-professor__erro" role="alert">
-            {erro}
-          </p>
-        )}
-
         <div className="formulario-professor__acoes">
           <button
             type="button"
             className="formulario-professor__botao-cancelar"
             onClick={cancelar}
+            disabled={enviando}
           >
             Cancelar
           </button>
-          <button type="submit" className="formulario-professor__botao-salvar">
-            {professorEditando ? "Salvar alterações" : "Cadastrar professor"}
+          <button type="submit" className="formulario-professor__botao-salvar" disabled={enviando}>
+            {enviando ? "Salvando..." : professorEditando ? "Salvar alterações" : "Cadastrar professor"}
           </button>
         </div>
       </form>

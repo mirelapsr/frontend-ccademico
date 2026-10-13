@@ -1,45 +1,122 @@
-const BASE_URL = 'http://127.0.0.1:8000';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
-interface RequestOptions extends RequestInit {
-  bodyData?: any;
+const TOKEN_KEY = '@CAcademic:token';
+
+
+export class ApiError extends Error {
+  status: number;
+
+  constructor(mensagem: string, status: number) {
+    super(mensagem);
+    this.name = 'ApiError';
+    this.status = status;
+  }
 }
 
-export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { bodyData, ...customOptions } = options;
-  const headers: HeadersInit = {
+
+function extrairMensagem(detail: unknown): string {
+  const padrao = 'Ocorreu um erro inesperado no servidor.';
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    const partes = detail.map((item: { loc?: unknown[]; msg?: string }) => {
+      const campo = Array.isArray(item.loc)
+        ? item.loc.filter((parte) => parte !== 'body').join('.')
+        : '';
+      const msg = item.msg ?? 'valor inválido';
+      return campo ? `${campo}: ${msg}` : msg;
+    });
+    return partes.join(' • ');
+  }
+  return padrao;
+}
+
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  timeout: 40000,
+  headers: {
     'Content-Type': 'application/json',
-    ...customOptions.headers,
-  };
+  },
+});
 
-  const config: RequestInit = {
-    ...customOptions,
-    headers,
-    body: bodyData !== undefined ? JSON.stringify(bodyData) : customOptions.body,
-  };
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, config);
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem(TOKEN_KEY);
 
-  if (!response.ok) {
-    let detalheErro = 'Erro na comunicação com o servidor';
-    try {
-      const jsonErro = await response.json();
-      detalheErro = jsonErro.detail || detalheErro;
-    } catch {
-      detalheErro = response.statusText;
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    throw new Error(detalheErro);
-  }
 
-  if (response.status === 204) {
-    return {} as T;
-  }
 
-  return response.json();
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// ---------------------------------------------------------------------------
+// RESPONSE INTERCEPTOR: Tratamento de Erros e Sessão Expirada
+// ---------------------------------------------------------------------------
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<{ detail?: unknown }>) => {
+    if (!error.response) {
+      console.error('Falha de conexão com a API.');
+      return Promise.reject(new ApiError('Servidor indisponível. Verifique sua conexão.', 0));
+    }
+
+    const { status, config } = error.response;
+    const url = config?.url || '';
+
+
+    if (status === 401) {
+    
+      if (!url.includes('/auth/login')) {
+        localStorage.removeItem(TOKEN_KEY);
+        window.location.href = '/login';
+        return Promise.reject(new ApiError('Sessão expirada. Faça login novamente.', 401));
+      }
+    }
+
+    const mensagemErro = extrairMensagem(error.response.data?.detail);
+
+    return Promise.reject(new ApiError(mensagemErro, status));
+  }
+);
+
+// ---------------------------------------------------------------------------
+// HELPER: Login com OAuth2 (application/x-www-form-urlencoded)
+// ---------------------------------------------------------------------------
+export async function postForm<T>(url: string, data: Record<string, string>): Promise<T> {
+  const params = new URLSearchParams();
+  Object.entries(data).forEach(([key, value]) => {
+    params.append(key, value);
+  });
+
+  const response = await api.post<T>(url, params, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
+
+  return response.data;
 }
 
-export const api = {
-  get: <T>(endpoint: string) => apiRequest<T>(endpoint, { method: 'GET' }),
-  post: <T>(endpoint: string, data: any) => apiRequest<T>(endpoint, { method: 'POST', bodyData: data }),
-  patch: <T>(endpoint: string, data: any) => apiRequest<T>(endpoint, { method: 'PATCH', bodyData: data }),
-  delete: <T>(endpoint: string) => apiRequest<T>(endpoint, { method: 'DELETE' }),
-};
+// ---------------------------------------------------------------------------
+// HELPERS DE TOKEN
+// ---------------------------------------------------------------------------
+export function salvarToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function obterToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function removerToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+(window as any).api = api;
+(window as any).postForm = postForm;

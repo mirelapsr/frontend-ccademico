@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ListaChamada, { type LinhaChamada } from "../components/frequencias/ListaChamada";
-import Toast from "../components/ui/Toast";
+import Toast, { type TipoToast } from "../components/ui/Toast";
+import { useLista } from "../hooks/useLista";
 import {
-  matriculasMock,
-  alunosMock,
-  gradesCurricularesMock,
-  materiasMock,
-  turmasMock,
-  frequenciasMock,
-} from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+  atualizarFrequencia,
+  criarFrequencia,
+  mensagemDeErroFrequencia,
+} from "../services/frequenciaService";
 import type {
   Frequencia,
   Matricula,
@@ -18,112 +14,112 @@ import type {
   GradeCurricular,
   Materia,
   Turma,
-  StatusFrequencia,
+  SituacaoFrequencia,
 } from "../types";
 
 interface EstadoLinha {
-  status: StatusFrequencia;
+  situacao: SituacaoFrequencia;
   justificativa: string;
+}
+
+interface Feedback {
+  tipo: TipoToast;
+  mensagem: string;
 }
 
 function hoje(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function agora(): string {
-  return new Date().toISOString();
-}
-
 function PaginaFrequencias() {
-  const [frequencias, setFrequencias] = useColecaoPersistida<Frequencia>(
-    CHAVES_LOCALSTORAGE.frequencias,
-    frequenciasMock
-  );
-  const [matriculas] = useColecaoPersistida<Matricula>(CHAVES_LOCALSTORAGE.matriculas, matriculasMock);
-  const [alunos] = useColecaoPersistida<Aluno>(CHAVES_LOCALSTORAGE.alunos, alunosMock);
-  const [grades] = useColecaoPersistida<GradeCurricular>(
-    CHAVES_LOCALSTORAGE.gradesCurriculares,
-    gradesCurricularesMock
-  );
-  const [materias] = useColecaoPersistida<Materia>(CHAVES_LOCALSTORAGE.materias, materiasMock);
-  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
+  const {
+    dados: frequencias,
+    carregando: carregandoFrequencias,
+    erro: erroFrequencias,
+    recarregar: recarregarFrequencias,
+  } = useLista<Frequencia>("/frequencias");
+  const { dados: matriculas, carregando: carregandoMatriculas } = useLista<Matricula>("/matriculas");
+  const { dados: alunos, carregando: carregandoAlunos } = useLista<Aluno>("/alunos");
+  const { dados: grades, carregando: carregandoGrades } =
+    useLista<GradeCurricular>("/grades");
+  const { dados: materias, carregando: carregandoMaterias } = useLista<Materia>("/materias");
+  const { dados: turmas, carregando: carregandoTurmas } = useLista<Turma>("/turmas");
 
   const [turmaSelecionada, setTurmaSelecionada] = useState<number | "">("");
   const [gradeSelecionada, setGradeSelecionada] = useState<number | "">("");
   const [data, setData] = useState(hoje());
   const [estadoChamada, setEstadoChamada] = useState<Record<number, EstadoLinha>>({});
-  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+
+  const carregando =
+    carregandoFrequencias ||
+    carregandoMatriculas ||
+    carregandoAlunos ||
+    carregandoGrades ||
+    carregandoMaterias ||
+    carregandoTurmas;
 
   const gradesDaTurma = useMemo(
-    () => (turmaSelecionada === "" ? [] : grades.filter((grade) => grade.turmaIdTurma === turmaSelecionada)),
+    () => (turmaSelecionada === "" ? [] : grades.filter((g) => g.turmaId === turmaSelecionada)),
     [grades, turmaSelecionada]
   );
 
-  const matriculasDaTurma = useMemo(
-    () =>
-      turmaSelecionada === ""
-        ? []
-        : matriculas.filter(
-            (matricula) => matricula.turmaIdTurma === turmaSelecionada && matricula.situacao === "Ativa"
-          ),
-    [matriculas, turmaSelecionada]
-  );
+  const alunosAtivosDaTurma = useMemo(() => {
+    if (turmaSelecionada === "") return [];
+    const idsAlunosComMatriculaAtiva = new Set(
+      matriculas
+        .filter((m) => m.turmaId === turmaSelecionada && m.situacao === "Ativa")
+        .map((m) => m.alunoId)
+    );
+    return alunos.filter((aluno) => idsAlunosComMatriculaAtiva.has(aluno.idAluno));
+  }, [matriculas, alunos, turmaSelecionada]);
 
-  // `chamadaJaExiste` reflete, para o trio (turma, disciplina, data) atual, se
-  // já existe ao menos um registro gravado — é o que decide badge, texto do
-  // botão e mensagem do Toast. Recalculado a cada render junto com o efeito
-  // abaixo, então fica sempre em sincronia com o que foi de fato carregado.
   const chamadaJaExiste = useMemo(() => {
     if (turmaSelecionada === "" || gradeSelecionada === "" || !data) return false;
     return frequencias.some(
-      (frequencia) => frequencia.gradeIdGrade === gradeSelecionada && frequencia.dataAula === data
+      (freq) => freq.gradeId === gradeSelecionada && freq.dataFrequencia === data
     );
   }, [frequencias, turmaSelecionada, gradeSelecionada, data]);
 
-  // Reabre a "folha de chamada" (turma + disciplina + data) sempre que
-  // qualquer um dos três filtros muda: pré-carrega o status de quem já tem
-  // frequência lançada para essa combinação exata, e assume "Presente" para
-  // quem ainda não tem. Não inclui `matriculas`/`frequencias` nas deps de
-  // propósito — só a troca de filtro deve reabrir a folha, não uma escrita
-  // no meio da edição (ex.: o próprio "Salvar Chamada" atualizando `frequencias`).
   useEffect(() => {
     if (turmaSelecionada === "" || gradeSelecionada === "" || !data) {
       setEstadoChamada({});
       return;
     }
 
-    const matriculasAtuais = matriculas.filter(
-      (matricula) => matricula.turmaIdTurma === turmaSelecionada && matricula.situacao === "Ativa"
-    );
-
     const novoEstado: Record<number, EstadoLinha> = {};
-    for (const matricula of matriculasAtuais) {
+    for (const aluno of alunosAtivosDaTurma) {
       const registroExistente = frequencias.find(
-        (frequencia) =>
-          frequencia.matriculaIdMatricula === matricula.idMatricula &&
-          frequencia.gradeIdGrade === gradeSelecionada &&
-          frequencia.dataAula === data
+        (freq) =>
+          freq.alunoId === aluno.idAluno &&
+          freq.gradeId === gradeSelecionada &&
+          freq.dataFrequencia === data
       );
-      novoEstado[matricula.idMatricula] = registroExistente
-        ? { status: registroExistente.status, justificativa: registroExistente.justificativa ?? "" }
-        : { status: "Presente", justificativa: "" };
+      novoEstado[aluno.idAluno] = registroExistente
+        ? {
+            situacao: registroExistente.situacao,
+            justificativa: registroExistente.justificativa ?? "",
+          }
+        : { situacao: "Presente", justificativa: "" };
     }
     setEstadoChamada(novoEstado);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [turmaSelecionada, gradeSelecionada, data]);
+  }, [turmaSelecionada, gradeSelecionada, data, alunosAtivosDaTurma, frequencias]);
 
   const linhas: LinhaChamada[] = useMemo(
     () =>
-      matriculasDaTurma.flatMap((matricula) => {
-        const aluno = alunos.find((item) => item.idAluno === matricula.alunoIdAluno);
-        if (!aluno) return [];
-        const estado = estadoChamada[matricula.idMatricula] ?? {
-          status: "Presente" as StatusFrequencia,
+      alunosAtivosDaTurma.map((aluno) => {
+        const estado = estadoChamada[aluno.idAluno] ?? {
+          situacao: "Presente" as SituacaoFrequencia,
           justificativa: "",
         };
-        return [{ matricula, aluno, status: estado.status, justificativa: estado.justificativa }];
+        return {
+          aluno,
+          situacao: estado.situacao,
+          justificativa: estado.justificativa,
+        };
       }),
-    [matriculasDaTurma, alunos, estadoChamada]
+    [alunosAtivosDaTurma, estadoChamada]
   );
 
   function handleMudarTurma(novaTurma: number | "") {
@@ -131,8 +127,6 @@ function PaginaFrequencias() {
     setGradeSelecionada("");
   }
 
-  // Usa Date.UTC (meio-dia, ainda que a hora não importe aqui) para que a
-  // soma de dias não seja afetada pelo fuso horário local nem por DST.
   function somarDias(dataIso: string, quantidade: number): string {
     const [ano, mes, dia] = dataIso.split("-").map(Number);
     const base = new Date(Date.UTC(ano, mes - 1, dia + quantidade));
@@ -151,21 +145,21 @@ function PaginaFrequencias() {
     setData(hoje());
   }
 
-  function handleMudarStatus(matriculaIdMatricula: number, status: StatusFrequencia) {
+  function handleMudarSituacao(alunoId: number, situacao: SituacaoFrequencia) {
     setEstadoChamada((atual) => ({
       ...atual,
-      [matriculaIdMatricula]: {
-        status,
-        justificativa: status === "Justificado" ? atual[matriculaIdMatricula]?.justificativa ?? "" : "",
+      [alunoId]: {
+        situacao,
+        justificativa: situacao === "FaltaJustificada" ? atual[alunoId]?.justificativa ?? "" : "",
       },
     }));
   }
 
-  function handleMudarJustificativa(matriculaIdMatricula: number, justificativa: string) {
+  function handleMudarJustificativa(alunoId: number, justificativa: string) {
     setEstadoChamada((atual) => ({
       ...atual,
-      [matriculaIdMatricula]: {
-        status: atual[matriculaIdMatricula]?.status ?? "Justificado",
+      [alunoId]: {
+        situacao: atual[alunoId]?.situacao ?? "FaltaJustificada",
         justificativa,
       },
     }));
@@ -174,67 +168,82 @@ function PaginaFrequencias() {
   function handleMarcarTodosPresentes() {
     setEstadoChamada((atual) => {
       const novo = { ...atual };
-      for (const matricula of matriculasDaTurma) {
-        novo[matricula.idMatricula] = { status: "Presente", justificativa: "" };
+      for (const aluno of alunosAtivosDaTurma) {
+        novo[aluno.idAluno] = { situacao: "Presente", justificativa: "" };
       }
       return novo;
     });
   }
 
-  function handleSalvarChamada() {
-    if (turmaSelecionada === "" || gradeSelecionada === "" || !data) return;
+  async function handleSalvarChamada() {
+    if (turmaSelecionada === "" || gradeSelecionada === "" || !data || salvando) return;
 
-    const eraAtualizacao = chamadaJaExiste;
-
-    setFrequencias((atual) => {
-      let proximoIdDisponivel = atual.reduce((maior, item) => Math.max(maior, item.idFrequencia), 0) + 1;
-      const atualizado = [...atual];
-
-      for (const matricula of matriculasDaTurma) {
-        const linha = estadoChamada[matricula.idMatricula] ?? {
-          status: "Presente" as StatusFrequencia,
+    setSalvando(true);
+    try {
+      const chamadasParaProcessar = alunosAtivosDaTurma.map(async (aluno) => {
+        const linha = estadoChamada[aluno.idAluno] ?? {
+          situacao: "Presente" as SituacaoFrequencia,
           justificativa: "",
         };
-        const justificativaFinal = linha.status === "Justificado" ? linha.justificativa : undefined;
 
-        const indiceExistente = atualizado.findIndex(
-          (item) =>
-            item.matriculaIdMatricula === matricula.idMatricula &&
-            item.gradeIdGrade === gradeSelecionada &&
-            item.dataAula === data
+        const justificativaFinal =
+          linha.situacao === "FaltaJustificada"
+            ? linha.justificativa.trim() || null
+            : null;
+
+        const registroExistente = frequencias.find(
+          (freq) =>
+            freq.alunoId === aluno.idAluno &&
+            freq.gradeId === gradeSelecionada &&
+            freq.dataFrequencia === data
         );
 
-        if (indiceExistente >= 0) {
-          atualizado[indiceExistente] = {
-            ...atualizado[indiceExistente],
-            status: linha.status,
+        if (registroExistente) {
+          return atualizarFrequencia(registroExistente.idFrequencia, {
+            situacao: linha.situacao,
             justificativa: justificativaFinal,
-            atualizadoEm: agora(),
-          };
-        } else {
-          atualizado.push({
-            idFrequencia: proximoIdDisponivel++,
-            matriculaIdMatricula: matricula.idMatricula,
-            gradeIdGrade: Number(gradeSelecionada),
-            dataAula: data,
-            status: linha.status,
-            justificativa: justificativaFinal,
-            criadoEm: agora(),
-            atualizadoEm: agora(),
+            dataFrequencia: data,
           });
         }
-      }
 
-      return atualizado;
-    });
+        return criarFrequencia({
+          alunoId: aluno.idAluno,
+          gradeId: Number(gradeSelecionada),
+          dataFrequencia: data,
+          situacao: linha.situacao,
+          justificativa: justificativaFinal,
+        });
+      });
 
-    setMensagemSucesso(
-      eraAtualizacao ? "Frequência atualizada com sucesso!" : "Chamada registrada com sucesso!"
-    );
+      await Promise.all(chamadasParaProcessar);
+      await recarregarFrequencias();
+
+      setFeedback({
+        tipo: "sucesso",
+        mensagem: chamadaJaExiste
+          ? "Frequência atualizada com sucesso!"
+          : "Chamada registrada com sucesso!",
+      });
+    } catch (e: unknown) {
+      setFeedback({
+        tipo: "erro",
+        mensagem: mensagemDeErroFrequencia(e, "Não foi possível salvar a frequência."),
+      });
+    } finally {
+      setSalvando(false);
+    }
   }
+
+  const fecharFeedback = useCallback(() => setFeedback(null), []);
 
   return (
     <>
+      {erroFrequencias && (
+        <div style={{ margin: "0 0 16px", padding: "10px 12px", background: "#fbeae9", color: "#a4302b", borderRadius: "4px" }}>
+          {erroFrequencias}
+        </div>
+      )}
+
       <ListaChamada
         turmas={turmas}
         gradesDaTurma={gradesDaTurma}
@@ -250,17 +259,18 @@ function PaginaFrequencias() {
         aoHoje={handleHoje}
         aoProximoDia={handleProximoDia}
         linhas={linhas}
-        aoMudarStatus={handleMudarStatus}
+        aoMudarSituacao={handleMudarSituacao}
         aoMudarJustificativa={handleMudarJustificativa}
         aoMarcarTodosPresentes={handleMarcarTodosPresentes}
-        aoSalvar={handleSalvarChamada}
+        aoSalvar={() => void handleSalvarChamada()}
       />
 
-      {mensagemSucesso && (
+      {feedback && (
         <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
+          mensagem={feedback.mensagem}
+          tipo={feedback.tipo}
+          duracaoMs={feedback.tipo === "erro" ? 6000 : undefined}
+          aoFechar={fecharFeedback}
         />
       )}
     </>

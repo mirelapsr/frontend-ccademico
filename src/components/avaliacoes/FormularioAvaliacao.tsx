@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type {
   Avaliacao,
   AvaliacaoEntrada,
@@ -12,19 +12,17 @@ import "./FormularioAvaliacao.css";
 
 interface FormularioAvaliacaoProps {
   avaliacaoEditando?: Avaliacao | null;
-  /** Grades curriculares cadastradas, para o <select> (rotulado com matéria+turma). */
   grades: GradeCurricular[];
   materias: Materia[];
   turmas: Turma[];
-  /** Períodos letivos cadastrados, para o <select> de período. */
   periodos: Periodo[];
-  salvar: (dados: AvaliacaoEntrada) => void;
+  salvar: (dados: AvaliacaoEntrada) => Promise<void> | void;
   cancelar: () => void;
 }
 
 function rotuloGrade(grade: GradeCurricular, materias: Materia[], turmas: Turma[]): string {
-  const materia = materias.find((item) => item.idMateria === grade.materiaIdMateria);
-  const turma = turmas.find((item) => item.idTurma === grade.turmaIdTurma);
+  const materia = materias.find((item) => item.idMateria === grade.materiaId);
+  const turma = turmas.find((item) => item.idTurma === grade.turmaId);
   return `${materia?.nomeMateria ?? "Matéria"} — ${turma?.nomeTurma ?? "Turma"}`;
 }
 
@@ -37,35 +35,48 @@ function FormularioAvaliacao({
   salvar,
   cancelar,
 }: FormularioAvaliacaoProps) {
-  const [gradeIdGrade, setGradeIdGrade] = useState(
-    avaliacaoEditando?.gradeIdGrade ?? grades[0]?.idGrade ?? 0
+  const [gradeId, setGradeId] = useState<number>(
+    avaliacaoEditando?.gradeId ?? grades[0]?.idGrade ?? 0
   );
-  const [periodoIdPeriodo, setPeriodoIdPeriodo] = useState(
-    avaliacaoEditando?.periodoIdPeriodo ?? periodos[0]?.idPeriodo ?? 0
+  const [periodoId, setPeriodoId] = useState<number>(
+    avaliacaoEditando?.periodoId ?? periodos[0]?.idPeriodo ?? 0
   );
   const [nomeAvaliacao, setNomeAvaliacao] = useState(avaliacaoEditando?.nomeAvaliacao ?? "");
   const [tipo, setTipo] = useState<TipoAvaliacao>(avaliacaoEditando?.tipo ?? "Prova");
   const [dataAvaliacao, setDataAvaliacao] = useState(avaliacaoEditando?.dataAvaliacao ?? "");
   const [peso, setPeso] = useState(avaliacaoEditando?.peso?.toString() ?? "1.00");
   const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const emEnvioRef = useRef(false);
 
-  function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (emEnvioRef.current || enviando) return;
 
-    if (!gradeIdGrade || !periodoIdPeriodo || !nomeAvaliacao.trim()) {
-      setErro("Grade curricular, período e nome da avaliação são obrigatórios.");
+    if (!gradeId || !periodoId || !nomeAvaliacao.trim() || !dataAvaliacao) {
+      setErro("Grade curricular, período, nome e data da avaliação são obrigatórios.");
       return;
     }
 
+    emEnvioRef.current = true;
+    setEnviando(true);
     setErro(null);
-    salvar({
-      gradeIdGrade: Number(gradeIdGrade),
-      periodoIdPeriodo: Number(periodoIdPeriodo),
-      nomeAvaliacao: nomeAvaliacao.trim(),
-      tipo,
-      dataAvaliacao: dataAvaliacao || undefined,
-      peso: peso ? Number(peso) : undefined,
-    });
+
+    try {
+      await salvar({
+        gradeId: Number(gradeId),
+        periodoId: Number(periodoId),
+        nomeAvaliacao: nomeAvaliacao.trim(),
+        tipo,
+        dataAvaliacao,
+        peso: peso ? Number(peso) : "1.00",
+      });
+    } catch (e: unknown) {
+      setErro(e instanceof Error ? e.message : "Não foi possível salvar a avaliação.");
+    } finally {
+      emEnvioRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (
@@ -78,8 +89,9 @@ function FormularioAvaliacao({
         <label className="formulario-avaliacao__campo formulario-avaliacao__campo--largo">
           <span>Grade curricular (matéria — turma) *</span>
           <select
-            value={gradeIdGrade}
-            onChange={(evento) => setGradeIdGrade(Number(evento.target.value))}
+            value={gradeId}
+            onChange={(evento) => setGradeId(Number(evento.target.value))}
+            disabled={enviando}
           >
             {grades.length === 0 && <option value={0}>Nenhuma grade cadastrada</option>}
             {grades.map((grade) => (
@@ -98,14 +110,16 @@ function FormularioAvaliacao({
             onChange={(evento) => setNomeAvaliacao(evento.target.value)}
             placeholder="Ex.: Prova Bimestral 1"
             maxLength={100}
+            disabled={enviando}
           />
         </label>
 
         <label className="formulario-avaliacao__campo">
           <span>Período letivo *</span>
           <select
-            value={periodoIdPeriodo}
-            onChange={(evento) => setPeriodoIdPeriodo(Number(evento.target.value))}
+            value={periodoId}
+            onChange={(evento) => setPeriodoId(Number(evento.target.value))}
+            disabled={enviando}
           >
             {periodos.length === 0 && <option value={0}>Nenhum período cadastrado</option>}
             {periodos.map((periodo) => (
@@ -118,9 +132,15 @@ function FormularioAvaliacao({
 
         <label className="formulario-avaliacao__campo">
           <span>Tipo *</span>
-          <select value={tipo} onChange={(evento) => setTipo(evento.target.value as TipoAvaliacao)}>
+          <select
+            value={tipo}
+            onChange={(evento) => setTipo(evento.target.value as TipoAvaliacao)}
+            disabled={enviando}
+          >
             <option value="Prova">Prova</option>
             <option value="Trabalho">Trabalho</option>
+            <option value="Projeto">Projeto</option>
+            <option value="Recuperacao">Recuperação</option>
             <option value="Seminario">Seminário</option>
             <option value="Participacao">Participação</option>
             <option value="Outro">Outro</option>
@@ -128,11 +148,12 @@ function FormularioAvaliacao({
         </label>
 
         <label className="formulario-avaliacao__campo">
-          <span>Data da avaliação</span>
+          <span>Data da avaliação *</span>
           <input
             type="date"
             value={dataAvaliacao}
             onChange={(evento) => setDataAvaliacao(evento.target.value)}
+            disabled={enviando}
           />
         </label>
 
@@ -145,6 +166,7 @@ function FormularioAvaliacao({
             min={0}
             max={99.99}
             step="0.01"
+            disabled={enviando}
           />
         </label>
 
@@ -159,11 +181,12 @@ function FormularioAvaliacao({
             type="button"
             className="formulario-avaliacao__botao-cancelar"
             onClick={cancelar}
+            disabled={enviando}
           >
             Cancelar
           </button>
-          <button type="submit" className="formulario-avaliacao__botao-salvar">
-            {avaliacaoEditando ? "Salvar alterações" : "Cadastrar avaliação"}
+          <button type="submit" className="formulario-avaliacao__botao-salvar" disabled={enviando}>
+            {enviando ? "A salvar..." : avaliacaoEditando ? "Salvar alterações" : "Cadastrar avaliação"}
           </button>
         </div>
       </form>

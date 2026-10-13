@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import type {
   Frequencia,
-  StatusFrequencia,
-  Matricula,
+  SituacaoFrequencia,
   Aluno,
   GradeCurricular,
   Materia,
@@ -13,7 +12,6 @@ import "./ListaFrequencias.css";
 
 interface ListaFrequenciasProps {
   frequencias: Frequencia[];
-  matriculas: Matricula[];
   alunos: Aluno[];
   grades: GradeCurricular[];
   materias: Materia[];
@@ -23,11 +21,10 @@ interface ListaFrequenciasProps {
   aoExcluirFrequencia: (idFrequencia: number) => void;
 }
 
-type FiltroStatus = "todos" | StatusFrequencia;
+type FiltroSituacao = "todos" | SituacaoFrequencia;
 
 function ListaFrequencias({
   frequencias,
-  matriculas,
   alunos,
   grades,
   materias,
@@ -37,7 +34,7 @@ function ListaFrequencias({
   aoExcluirFrequencia,
 }: ListaFrequenciasProps) {
   const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
+  const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todos");
   const [filtroData, setFiltroData] = useState("");
 
   const frequenciasFiltradas = useMemo(() => {
@@ -45,11 +42,10 @@ function ListaFrequencias({
 
     return frequencias
       .filter((frequencia) => {
-        const matricula = matriculas.find((item) => item.idMatricula === frequencia.matriculaIdMatricula);
-        const aluno = matricula ? alunos.find((item) => item.idAluno === matricula.alunoIdAluno) : undefined;
-        const grade = grades.find((item) => item.idGrade === frequencia.gradeIdGrade);
-        const materia = grade ? materias.find((item) => item.idMateria === grade.materiaIdMateria) : undefined;
-        const turma = matricula ? turmas.find((item) => item.idTurma === matricula.turmaIdTurma) : undefined;
+        const aluno = alunos.find((item) => item.idAluno === frequencia.alunoId);
+        const grade = grades.find((item) => item.idGrade === frequencia.gradeId);
+        const materia = grade ? materias.find((item) => item.idMateria === grade.materiaId) : undefined;
+        const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaId) : undefined;
 
         const combinaBusca =
           buscaNormalizada === "" ||
@@ -57,13 +53,13 @@ function ListaFrequencias({
           (materia?.nomeMateria ?? "").toLowerCase().includes(buscaNormalizada) ||
           (turma?.nomeTurma ?? "").toLowerCase().includes(buscaNormalizada);
 
-        const combinaStatus = filtroStatus === "todos" || frequencia.status === filtroStatus;
-        const combinaData = filtroData === "" || frequencia.dataAula === filtroData;
+        const combinaSituacao = filtroSituacao === "todos" || frequencia.situacao === filtroSituacao;
+        const combinaData = filtroData === "" || frequencia.dataFrequencia === filtroData;
 
-        return combinaBusca && combinaStatus && combinaData;
+        return combinaBusca && combinaSituacao && combinaData;
       })
-      .sort((a, b) => b.dataAula.localeCompare(a.dataAula));
-  }, [frequencias, matriculas, alunos, grades, materias, turmas, busca, filtroStatus, filtroData]);
+      .sort((a, b) => b.dataFrequencia.localeCompare(a.dataFrequencia));
+  }, [frequencias, alunos, grades, materias, turmas, busca, filtroSituacao, filtroData]);
 
   return (
     <section className="lista-frequencias">
@@ -96,14 +92,14 @@ function ListaFrequencias({
 
         <select
           className="lista-frequencias__select"
-          value={filtroStatus}
-          onChange={(evento) => setFiltroStatus(evento.target.value as FiltroStatus)}
-          aria-label="Filtrar por status"
+          value={filtroSituacao}
+          onChange={(evento) => setFiltroSituacao(evento.target.value as FiltroSituacao)}
+          aria-label="Filtrar por situação"
         >
-          <option value="todos">Todos os status</option>
+          <option value="todos">Todas as situações</option>
           <option value="Presente">Presente</option>
-          <option value="Ausente">Ausente</option>
-          <option value="Justificado">Justificado</option>
+          <option value="Falta">Ausente</option>
+          <option value="FaltaJustificada">Justificado</option>
         </select>
       </div>
 
@@ -119,7 +115,6 @@ function ListaFrequencias({
             <CardFrequencia
               key={frequencia.idFrequencia}
               frequencia={frequencia}
-              matriculas={matriculas}
               alunos={alunos}
               turmas={turmas}
               grades={grades}

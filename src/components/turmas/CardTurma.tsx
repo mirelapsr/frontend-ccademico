@@ -3,7 +3,7 @@ import "./CardTurma.css";
 
 interface CardTurmaProps {
   turma: Turma;
-  /** Lista completa de escolas — o card resolve o nome pela FK `escolaIdEscola`. */
+  /** Lista completa de escolas — o card resolve o nome pela FK `escolaId`. */
   escolas: Escola[];
   aoEditar: () => void;
   aoExcluir: () => void;
@@ -26,7 +26,7 @@ function ValorOuVazio({ valor }: { valor: string | number | null | undefined }) 
 }
 
 function CardTurma({ turma, escolas, aoEditar, aoExcluir }: CardTurmaProps) {
-  const escolaVinculada = escolas.find((escola) => escola.idEscola === turma.escolaIdEscola);
+  const escolaVinculada = escolas.find((escola) => escola.idEscola === turma.escolaId);
 
   return (
     <article className="card-turma">
@@ -81,10 +81,12 @@ function CardTurma({ turma, escolas, aoEditar, aoExcluir }: CardTurmaProps) {
         </div>
       </div>
 
-      <footer className="card-turma__rodape">
-        <span>Criada em: {formatarData(turma.criadoEm)}</span>
-        <span>Atualizada em: {formatarData(turma.atualizadoEm)}</span>
-      </footer>
+      {(turma.criadoEm || turma.atualizadoEm) && (
+        <footer className="card-turma__rodape">
+          {turma.criadoEm && <span>Criada em: {formatarData(turma.criadoEm)}</span>}
+          {turma.atualizadoEm && <span>Atualizada em: {formatarData(turma.atualizadoEm)}</span>}
+        </footer>
+      )}
     </article>
   );
 }

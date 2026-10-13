@@ -1,10 +1,15 @@
-import { useState, type FormEvent } from "react";
-import type { Materia, MateriaEntrada } from "../../types";
+import { useRef, useState, type FormEvent } from "react";
+import type { Materia } from "../../types";
+import type { CriarMateriaDTO } from "../../services/materiaService";
 import "./FormularioMateria.css";
 
 interface FormularioMateriaProps {
   materiaEditando?: Materia | null;
-  salvar: (dados: MateriaEntrada) => void;
+  /**
+   * Persiste na API. Deve LANÇAR em caso de falha: o formulário captura,
+   * mostra a mensagem no topo e continua aberto com os dados preenchidos.
+   */
+  salvar: (dados: CriarMateriaDTO) => Promise<void>;
   cancelar: () => void;
 }
 
@@ -16,20 +21,39 @@ function FormularioMateria({ materiaEditando, salvar, cancelar }: FormularioMate
       : ""
   );
   const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
 
-  function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  // `useState` é assíncrono: o ref bloqueia o 2º clique no mesmo instante.
+  const emEnvioRef = useRef(false);
+
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (emEnvioRef.current) return;
 
     if (!nomeMateria.trim()) {
       setErro("O nome da matéria é obrigatório.");
       return;
     }
 
+    // A API exige carga horária inteira e maior que zero (MateriaEntrada).
+    const horas = Number(cargaHoraria);
+    if (!cargaHoraria.trim() || !Number.isInteger(horas) || horas <= 0) {
+      setErro("A carga horária é obrigatória e deve ser um número inteiro maior que zero.");
+      return;
+    }
+
+    emEnvioRef.current = true;
+    setEnviando(true);
     setErro(null);
-    salvar({
-      nomeMateria: nomeMateria.trim(),
-      cargaHoraria: cargaHoraria.trim() ? Number(cargaHoraria) : null,
-    });
+    try {
+      await salvar({ nomeMateria: nomeMateria.trim(), cargaHoraria: horas });
+      // Sucesso: a página fecha o formulário.
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível salvar a matéria.");
+    } finally {
+      emEnvioRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (
@@ -39,42 +63,46 @@ function FormularioMateria({ materiaEditando, salvar, cancelar }: FormularioMate
       </header>
 
       <form className="formulario-materia__form" onSubmit={handleSubmit} noValidate>
-        <label className="formulario-materia__campo formulario-materia__campo--largo">
-          <span>Nome da matéria *</span>
-          <input
-            value={nomeMateria}
-            onChange={(evento) => setNomeMateria(evento.target.value)}
-            placeholder="Ex.: Matemática"
-          />
-        </label>
-
-        <label className="formulario-materia__campo">
-          <span>Carga horária (h)</span>
-          <input
-            type="number"
-            min={1}
-            value={cargaHoraria}
-            onChange={(evento) => setCargaHoraria(evento.target.value)}
-            placeholder="Opcional"
-          />
-        </label>
-
         {erro && (
           <p className="formulario-materia__erro" role="alert">
             {erro}
           </p>
         )}
 
+        <label className="formulario-materia__campo formulario-materia__campo--largo">
+          <span>Nome da matéria *</span>
+          <input
+            value={nomeMateria}
+            onChange={(evento) => setNomeMateria(evento.target.value)}
+            maxLength={80}
+            placeholder="Ex.: Matemática"
+            disabled={enviando}
+          />
+        </label>
+
+        <label className="formulario-materia__campo">
+          <span>Carga horária (h) *</span>
+          <input
+            type="number"
+            min={1}
+            value={cargaHoraria}
+            onChange={(evento) => setCargaHoraria(evento.target.value)}
+            placeholder="Ex.: 80"
+            disabled={enviando}
+          />
+        </label>
+
         <div className="formulario-materia__acoes">
           <button
             type="button"
             className="formulario-materia__botao-cancelar"
             onClick={cancelar}
+            disabled={enviando}
           >
             Cancelar
           </button>
-          <button type="submit" className="formulario-materia__botao-salvar">
-            {materiaEditando ? "Salvar alterações" : "Cadastrar matéria"}
+          <button type="submit" className="formulario-materia__botao-salvar" disabled={enviando}>
+            {enviando ? "Salvando..." : materiaEditando ? "Salvar alterações" : "Cadastrar matéria"}
           </button>
         </div>
       </form>

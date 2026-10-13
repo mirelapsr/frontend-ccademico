@@ -1,46 +1,63 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import ListaAvaliacoes from "../components/avaliacoes/ListaAvaliacoes";
 import FormularioAvaliacao from "../components/avaliacoes/FormularioAvaliacao";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
-import Toast from "../components/ui/Toast";
+import Toast, { type TipoToast } from "../components/ui/Toast";
+import { useLista } from "../hooks/useLista";
 import {
-  gradesCurricularesMock,
-  materiasMock,
-  turmasMock,
-  periodosMock,
-  avaliacoesMock,
-} from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
-import type { Avaliacao, AvaliacaoEntrada, GradeCurricular, Materia, Turma, Periodo } from "../types";
+  atualizarAvaliacao,
+  criarAvaliacao,
+  ehErroDeVinculo,
+  excluirAvaliacao,
+  mensagemDeErroAvaliacao,
+} from "../services/avaliacaoService";
+import type {
+  Avaliacao,
+  AvaliacaoEntrada,
+  GradeCurricular,
+  Materia,
+  Turma,
+  Periodo,
+} from "../types";
 
 type Tela = "lista" | "formulario";
 
-function proximoId(avaliacoes: Avaliacao[]): number {
-  return avaliacoes.reduce((maior, avaliacao) => Math.max(maior, avaliacao.idAvaliacao), 0) + 1;
-}
-
-function agora(): string {
-  return new Date().toISOString();
+interface Feedback {
+  tipo: TipoToast;
+  mensagem: string;
 }
 
 function PaginaAvaliacoes() {
-  const [avaliacoes, setAvaliacoes] = useColecaoPersistida<Avaliacao>(
-    CHAVES_LOCALSTORAGE.avaliacoes,
-    avaliacoesMock
-  );
-  const [grades] = useColecaoPersistida<GradeCurricular>(
-    CHAVES_LOCALSTORAGE.gradesCurriculares,
-    gradesCurricularesMock
-  );
-  const [materias] = useColecaoPersistida<Materia>(CHAVES_LOCALSTORAGE.materias, materiasMock);
-  const [turmas] = useColecaoPersistida<Turma>(CHAVES_LOCALSTORAGE.turmas, turmasMock);
-  const [periodos] = useColecaoPersistida<Periodo>(CHAVES_LOCALSTORAGE.periodos, periodosMock);
+  const {
+    dados: avaliacoes,
+    carregando: carregandoAvaliacoes,
+    erro: erroAvaliacoes,
+    recarregar: recarregarAvaliacoes,
+  } = useLista<Avaliacao>("/avaliacoes");
+  const { dados: grades, carregando: carregandoGrades, erro: erroGrades } =
+    useLista<GradeCurricular>("/grades");
+  const { dados: materias, carregando: carregandoMaterias, erro: erroMaterias } =
+    useLista<Materia>("/materias");
+  const { dados: turmas, carregando: carregandoTurmas, erro: erroTurmas } =
+    useLista<Turma>("/turmas");
+  const { dados: periodos, carregando: carregandoPeriodos, erro: erroPeriodos } =
+    useLista<Periodo>("/periodos");
 
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [avaliacaoEmEdicao, setAvaliacaoEmEdicao] = useState<Avaliacao | null>(null);
   const [avaliacaoParaExcluir, setAvaliacaoParaExcluir] = useState<Avaliacao | null>(null);
-  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+
+  const carregando =
+    carregandoAvaliacoes ||
+    carregandoGrades ||
+    carregandoMaterias ||
+    carregandoTurmas ||
+    carregandoPeriodos;
+
+  const erroGeral =
+    erroAvaliacoes ?? erroGrades ?? erroMaterias ?? erroTurmas ?? erroPeriodos;
 
   function abrirNovaAvaliacao() {
     setAvaliacaoEmEdicao(null);
@@ -58,36 +75,23 @@ function PaginaAvaliacoes() {
     setTelaAtual("lista");
   }
 
-  function adicionarAvaliacao(dados: AvaliacaoEntrada) {
-    const novaAvaliacao: Avaliacao = {
-      ...dados,
-      idAvaliacao: proximoId(avaliacoes),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setAvaliacoes((atual) => [...atual, novaAvaliacao]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Avaliação criada com sucesso!");
-  }
-
-  function atualizarAvaliacao(idAvaliacao: number, dados: AvaliacaoEntrada) {
-    setAvaliacoes((atual) =>
-      atual.map((avaliacao) =>
-        avaliacao.idAvaliacao === idAvaliacao
-          ? { ...avaliacao, ...dados, atualizadoEm: agora() }
-          : avaliacao
-      )
-    );
-    setAvaliacaoEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Avaliação atualizada com sucesso!");
-  }
-
-  function handleSalvarFormulario(dados: AvaliacaoEntrada) {
-    if (avaliacaoEmEdicao) {
-      atualizarAvaliacao(avaliacaoEmEdicao.idAvaliacao, dados);
-    } else {
-      adicionarAvaliacao(dados);
+  async function handleSalvarFormulario(dados: AvaliacaoEntrada): Promise<void> {
+    try {
+      if (avaliacaoEmEdicao) {
+        await atualizarAvaliacao(avaliacaoEmEdicao.idAvaliacao, dados);
+      } else {
+        await criarAvaliacao(dados);
+      }
+      setFeedback({
+        tipo: "sucesso",
+        mensagem: avaliacaoEmEdicao
+          ? "Avaliação atualizada com sucesso!"
+          : "Avaliação cadastrada com sucesso!",
+      });
+      cancelarFormulario();
+      await recarregarAvaliacoes();
+    } catch (e: unknown) {
+      throw new Error(mensagemDeErroAvaliacao(e, "Não foi possível salvar a avaliação."));
     }
   }
 
@@ -96,21 +100,58 @@ function PaginaAvaliacoes() {
     setAvaliacaoParaExcluir(avaliacao);
   }
 
-  function confirmarExclusao() {
-    if (!avaliacaoParaExcluir) return;
-    setAvaliacoes((atual) =>
-      atual.filter((avaliacao) => avaliacao.idAvaliacao !== avaliacaoParaExcluir.idAvaliacao)
-    );
-    setAvaliacaoParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setAvaliacaoParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!avaliacaoParaExcluir || excluindo) return;
+    const alvo = avaliacaoParaExcluir;
+
+    setExcluindo(true);
+    try {
+      await excluirAvaliacao(alvo.idAvaliacao);
+      setFeedback({ tipo: "sucesso", mensagem: "Avaliação excluída com sucesso!" });
+      await recarregarAvaliacoes();
+    } catch (e: unknown) {
+      setFeedback({
+        tipo: "erro",
+        mensagem: ehErroDeVinculo(e)
+          ? "Não é possível excluir esta avaliação pois já existem notas vinculadas a ela."
+          : mensagemDeErroAvaliacao(e, "Não foi possível excluir a avaliação."),
+      });
+    } finally {
+      setExcluindo(false);
+      setAvaliacaoParaExcluir(null);
+    }
   }
 
-  function cancelarExclusao() {
-    setAvaliacaoParaExcluir(null);
+  const fecharFeedback = useCallback(() => setFeedback(null), []);
+
+  if (carregando && avaliacoes.length === 0) {
+    return (
+      <div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+        <p>Carregando avaliações...</p>
+      </div>
+    );
   }
 
   return (
     <>
+      {erroGeral && (
+        <div
+          style={{
+            margin: "0 0 16px",
+            padding: "10px 12px",
+            background: "#fbeae9",
+            color: "#a4302b",
+            borderRadius: "4px",
+          }}
+        >
+          {erroGeral}
+        </div>
+      )}
+
       {telaAtual === "lista" ? (
         <ListaAvaliacoes
           avaliacoes={avaliacoes}
@@ -124,6 +165,7 @@ function PaginaAvaliacoes() {
         />
       ) : (
         <FormularioAvaliacao
+          key={avaliacaoEmEdicao?.idAvaliacao ?? "nova"}
           avaliacaoEditando={avaliacaoEmEdicao}
           grades={grades}
           materias={materias}
@@ -139,17 +181,18 @@ function PaginaAvaliacoes() {
           titulo="Excluir avaliação"
           mensagem={`Tem certeza que deseja excluir a avaliação "${avaliacaoParaExcluir.nomeAvaliacao}"? Essa ação não pode ser desfeita.`}
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
-      {mensagemSucesso && (
+      {feedback && (
         <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
+          mensagem={feedback.mensagem}
+          tipo={feedback.tipo}
+          duracaoMs={feedback.tipo === "erro" ? 6000 : undefined}
+          aoFechar={fecharFeedback}
         />
       )}
     </>

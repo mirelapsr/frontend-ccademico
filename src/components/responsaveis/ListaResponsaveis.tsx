@@ -6,6 +6,10 @@ import "./ListaResponsaveis.css";
 
 interface ListaResponsaveisProps {
   responsaveis: Responsavel[];
+  carregando: boolean;
+  erro: string | null;
+  aoDispensarErro: () => void;
+  aoRecarregar: () => void;
   aoNovoResponsavel: () => void;
   aoEditarResponsavel: (idResponsavel: number) => void;
   aoExcluirResponsavel: (idResponsavel: number) => void;
@@ -13,6 +17,10 @@ interface ListaResponsaveisProps {
 
 function ListaResponsaveis({
   responsaveis,
+  carregando,
+  erro,
+  aoDispensarErro,
+  aoRecarregar,
   aoNovoResponsavel,
   aoEditarResponsavel,
   aoExcluirResponsavel,
@@ -46,6 +54,25 @@ function ListaResponsaveis({
         </button>
       </header>
 
+      {erro && (
+        <div className="lista-responsaveis__alerta" role="alert">
+          <p>{erro}</p>
+          <div className="lista-responsaveis__alerta-acoes">
+            <button type="button" onClick={aoRecarregar} disabled={carregando}>
+              Tentar novamente
+            </button>
+            <button
+              type="button"
+              className="lista-responsaveis__alerta-fechar"
+              onClick={aoDispensarErro}
+              aria-label="Dispensar alerta"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="lista-responsaveis__filtros">
         <label className="lista-responsaveis__busca">
           <IconeBusca />
@@ -59,7 +86,11 @@ function ListaResponsaveis({
         </label>
       </div>
 
-      {responsaveisFiltrados.length === 0 ? (
+      {carregando ? (
+        <p className="lista-responsaveis__estado" role="status">
+          A carregar responsáveis...
+        </p>
+      ) : responsaveisFiltrados.length === 0 ? (
         <p className="lista-responsaveis__vazio-geral">
           {responsaveis.length === 0
             ? "Nenhum responsável cadastrado ainda."
@@ -71,8 +102,8 @@ function ListaResponsaveis({
             <CardResponsavel
               key={responsavel.idResponsavel}
               responsavel={responsavel}
-              aoEditar={() => aoEditarResponsavel(responsavel.idResponsavel)}
-              aoExcluir={() => aoExcluirResponsavel(responsavel.idResponsavel)}
+              aoEditar={aoEditarResponsavel}
+              aoExcluir={aoExcluirResponsavel}
             />
           ))}
         </div>

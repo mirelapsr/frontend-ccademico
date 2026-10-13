@@ -4,7 +4,7 @@ import "./CardProfessor.css";
 
 interface CardProfessorProps {
   professor: Professor;
-  /** Lista completa de escolas — o card resolve o nome pela FK `escolaIdEscola`. */
+  /** Lista completa de escolas — o card resolve o nome pela FK `escolaId`. */
   escolas: Escola[];
   aoEditar: () => void;
   aoExcluir: () => void;
@@ -20,7 +20,7 @@ function ValorOuVazio({ valor }: { valor: string | null | undefined }) {
 }
 
 function CardProfessor({ professor, escolas, aoEditar, aoExcluir }: CardProfessorProps) {
-  const escolaVinculada = escolas.find((escola) => escola.idEscola === professor.escolaIdEscola);
+  const escolaVinculada = escolas.find((escola) => escola.idEscola === professor.escolaId);
 
   return (
     <article className="card-professor">
@@ -83,10 +83,14 @@ function CardProfessor({ professor, escolas, aoEditar, aoExcluir }: CardProfesso
         </div>
       </div>
 
-      <footer className="card-professor__rodape">
-        <span>Cadastrado em: {formatarData(professor.criadoEm)}</span>
-        <span>Atualizado em: {formatarData(professor.atualizadoEm)}</span>
-      </footer>
+      {(professor.criadoEm || professor.atualizadoEm) && (
+        <footer className="card-professor__rodape">
+          {professor.criadoEm && <span>Cadastrado em: {formatarData(professor.criadoEm)}</span>}
+          {professor.atualizadoEm && (
+            <span>Atualizado em: {formatarData(professor.atualizadoEm)}</span>
+          )}
+        </footer>
+      )}
     </article>
   );
 }

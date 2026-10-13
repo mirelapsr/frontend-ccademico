@@ -1,119 +1,143 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ListaProfessores from "../components/professores/ListaProfessores";
 import FormularioProfessor from "../components/professores/FormularioProfessor";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
-import { escolasMock, professoresMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
+import { listarEscolas } from "../services/escolaService";
+import {
+  atualizarProfessor,
+  criarProfessor,
+  ehErroDeVinculo,
+  excluirProfessor,
+  listarProfessores,
+  mensagemDeErroProfessor,
+} from "../services/professorService";
 import type { Escola, Professor, ProfessorEntrada } from "../types";
 
-type Tela = "lista" | "formulario";
-
-function proximoId(professores: Professor[]): number {
-  return professores.reduce((maior, professor) => Math.max(maior, professor.idProfessor), 0) + 1;
-}
-
-function agora(): string {
-  return new Date().toISOString();
-}
-
 function PaginaProfessores() {
-  const [professores, setProfessores] = useColecaoPersistida<Professor>(
-    CHAVES_LOCALSTORAGE.professores,
-    professoresMock
-  );
-  const [escolas] = useColecaoPersistida<Escola>(CHAVES_LOCALSTORAGE.escolas, escolasMock);
+  const [professores, setProfessores] = useState<Professor[]>([]);
+  const [escolas, setEscolas] = useState<Escola[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const [telaAtual, setTelaAtual] = useState<Tela>("lista");
+  const [modalAberto, setModalAberto] = useState(false);
   const [professorEmEdicao, setProfessorEmEdicao] = useState<Professor | null>(null);
 
   const [professorParaExcluir, setProfessorParaExcluir] = useState<Professor | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const [listaProfessores, listaEscolas] = await Promise.all([
+        listarProfessores(),
+        listarEscolas(),
+      ]);
+      setProfessores(listaProfessores);
+      setEscolas(listaEscolas);
+    } catch (e) {
+      setErro(mensagemDeErroProfessor(e, "Não foi possível carregar os professores."));
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
   function abrirNovoProfessor() {
     setProfessorEmEdicao(null);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function abrirEdicaoProfessor(idProfessor: number) {
     const professor = professores.find((item) => item.idProfessor === idProfessor) ?? null;
+    if (!professor) return;
     setProfessorEmEdicao(professor);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function cancelarFormulario() {
     setProfessorEmEdicao(null);
-    setTelaAtual("lista");
+    setModalAberto(false);
   }
 
-  function adicionarProfessor(dados: ProfessorEntrada) {
-    const novoProfessor: Professor = {
-      ...dados,
-      idProfessor: proximoId(professores),
-      criadoEm: agora(),
-      atualizadoEm: agora(),
-    };
-    setProfessores((atual) => [...atual, novoProfessor]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Professor criado com sucesso!");
-  }
-
-  function atualizarProfessor(idProfessor: number, dados: ProfessorEntrada) {
-    setProfessores((atual) =>
-      atual.map((professor) =>
-        professor.idProfessor === idProfessor
-          ? { ...professor, ...dados, atualizadoEm: agora() }
-          : professor
-      )
-    );
-    setProfessorEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Professor atualizado com sucesso!");
-  }
-
-  function handleSalvarFormulario(dados: ProfessorEntrada) {
-    if (professorEmEdicao) {
-      atualizarProfessor(professorEmEdicao.idProfessor, dados);
-    } else {
-      adicionarProfessor(dados);
+  async function salvarFormulario(dados: ProfessorEntrada): Promise<void> {
+    try {
+      if (professorEmEdicao) {
+        const atualizado = await atualizarProfessor(professorEmEdicao.idProfessor, dados);
+        setProfessores((atual) =>
+          atual.map((p) => (p.idProfessor === atualizado.idProfessor ? atualizado : p))
+        );
+        setMensagemSucesso("Professor atualizado com sucesso!");
+      } else {
+        const novo = await criarProfessor(dados);
+        setProfessores((atual) => [...atual, novo]);
+        setMensagemSucesso("Professor criado com sucesso!");
+      }
+    } catch (e) {
+      throw new Error(mensagemDeErroProfessor(e, "Não foi possível salvar o professor."));
     }
+    cancelarFormulario();
   }
 
   function pedirConfirmacaoExclusao(idProfessor: number) {
-    const professor = professores.find((item) => item.idProfessor === idProfessor) ?? null;
-    setProfessorParaExcluir(professor);
+    setProfessorParaExcluir(professores.find((item) => item.idProfessor === idProfessor) ?? null);
   }
 
-  function confirmarExclusao() {
-    if (!professorParaExcluir) return;
-    setProfessores((atual) =>
-      atual.filter((professor) => professor.idProfessor !== professorParaExcluir.idProfessor)
-    );
-    setProfessorParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setProfessorParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!professorParaExcluir || excluindo) return;
+    const alvo = professorParaExcluir;
+
+    setExcluindo(true);
+    setErro(null);
+    try {
+      await excluirProfessor(alvo.idProfessor);
+      setProfessores((atual) => atual.filter((p) => p.idProfessor !== alvo.idProfessor));
+      setMensagemSucesso("Deletado com sucesso!");
+    } catch (e) {
+      setErro(
+        ehErroDeVinculo(e)
+          ? `Não é possível excluir "${alvo.nomeProf}": o professor está vinculado a grades ` +
+              `curriculares. Remova esses vínculos e tente novamente.`
+          : mensagemDeErroProfessor(e, "Não foi possível excluir o professor.")
+      );
+    } finally {
+      setExcluindo(false);
+      setProfessorParaExcluir(null);
+    }
   }
 
-  function cancelarExclusao() {
-    setProfessorParaExcluir(null);
-  }
+  const fecharToast = useCallback(() => setMensagemSucesso(null), []);
 
   return (
     <>
-      {telaAtual === "lista" ? (
+      {!modalAberto ? (
         <ListaProfessores
           professores={professores}
           escolas={escolas}
+          carregando={carregando}
+          erro={erro}
+          aoDispensarErro={() => setErro(null)}
+          aoRecarregar={() => void carregar()}
           aoNovoProfessor={abrirNovoProfessor}
           aoEditarProfessor={abrirEdicaoProfessor}
           aoExcluirProfessor={pedirConfirmacaoExclusao}
         />
       ) : (
         <FormularioProfessor
+          key={professorEmEdicao?.idProfessor ?? "novo"}
           professorEditando={professorEmEdicao}
           escolas={escolas}
-          salvar={handleSalvarFormulario}
+          salvar={salvarFormulario}
           cancelar={cancelarFormulario}
         />
       )}
@@ -123,18 +147,14 @@ function PaginaProfessores() {
           titulo="Excluir professor"
           mensagem={`Tem certeza que deseja excluir "${professorParaExcluir.nomeProf}"? Essa ação não pode ser desfeita.`}
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
       {mensagemSucesso && (
-        <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
-        />
+        <Toast mensagem={mensagemSucesso} tipo="sucesso" aoFechar={fecharToast} />
       )}
     </>
   );

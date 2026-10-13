@@ -9,6 +9,10 @@ interface ListaTurmasProps {
   aoNovaTurma: () => void;
   aoEditarTurma: (idTurma: number) => void;
   aoExcluirTurma: (idTurma: number) => void;
+  carregando?: boolean;
+  erro?: string | null;
+  aoDispensarErro?: () => void;
+  aoRecarregar?: () => void;
 }
 
 type FiltroTurno = "todas" | Turno;
@@ -19,6 +23,10 @@ function ListaTurmas({
   aoNovaTurma,
   aoEditarTurma,
   aoExcluirTurma,
+  carregando = false,
+  erro = null,
+  aoDispensarErro,
+  aoRecarregar,
 }: ListaTurmasProps) {
   const [busca, setBusca] = useState("");
   const [filtroTurno, setFiltroTurno] = useState<FiltroTurno>("todas");
@@ -27,12 +35,13 @@ function ListaTurmas({
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return turmas.filter((turma) => {
-      const escolaVinculada = escolas.find((escola) => escola.idEscola === turma.escolaIdEscola);
+      const escolaVinculada = escolas.find((escola) => escola.idEscola === turma.escolaId);
 
       const combinaBusca =
         buscaNormalizada === "" ||
         turma.nomeTurma.toLowerCase().includes(buscaNormalizada) ||
         (turma.serie ?? "").toLowerCase().includes(buscaNormalizada) ||
+        String(turma.anoLetivo).includes(buscaNormalizada) ||
         (escolaVinculada?.nomeEscola ?? "").toLowerCase().includes(buscaNormalizada);
 
       const combinaFiltro = filtroTurno === "todas" || turma.turno === filtroTurno;
@@ -50,6 +59,24 @@ function ListaTurmas({
         </button>
       </header>
 
+      {erro && (
+        <div className="lista-turmas__erro" role="alert">
+          <p>{erro}</p>
+          <div className="lista-turmas__erro-acoes">
+            {aoRecarregar && (
+              <button type="button" onClick={aoRecarregar} disabled={carregando}>
+                Recarregar
+              </button>
+            )}
+            {aoDispensarErro && (
+              <button type="button" onClick={aoDispensarErro} aria-label="Dispensar aviso">
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="lista-turmas__filtros">
         <label className="lista-turmas__busca">
           <IconeBusca />
@@ -57,7 +84,7 @@ function ListaTurmas({
             type="search"
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
-            placeholder="Buscar por nome, série ou escola..."
+            placeholder="Buscar por nome, série, ano ou escola..."
             aria-label="Buscar turmas"
           />
         </label>
@@ -78,9 +105,11 @@ function ListaTurmas({
 
       {turmasFiltradas.length === 0 ? (
         <p className="lista-turmas__vazio-geral">
-          {turmas.length === 0
-            ? "Nenhuma turma cadastrada ainda."
-            : "Nenhuma turma encontrada para esses filtros."}
+          {carregando
+            ? "Carregando turmas..."
+            : turmas.length === 0
+              ? "Nenhuma turma cadastrada ainda."
+              : "Nenhuma turma encontrada para esses filtros."}
         </p>
       ) : (
         <div className="lista-turmas__grade">

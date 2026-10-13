@@ -1,11 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type { Aluno, AlunoEntrada, SituacaoAluno } from "../../types";
 import { limparCpf } from "../../utils/formatadores";
 import "./FormularioAluno.css";
 
 interface FormularioAlunoProps {
   alunoEditando?: Aluno | null;
-  salvar: (dados: AlunoEntrada) => void;
+  salvar: (dados: AlunoEntrada) => Promise<void>;
   cancelar: () => void;
 }
 
@@ -20,27 +20,50 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
   const [enderecoAluno, setEnderecoAluno] = useState(alunoEditando?.enderecoAluno ?? "");
   const [situacao, setSituacao] = useState<SituacaoAluno>(alunoEditando?.situacao ?? "Ativo");
   const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const emEnvioRef = useRef(false);
 
-  function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (emEnvioRef.current) return;
 
     if (!nomeAluno.trim() || !numeroMatricula.trim() || !dataNascimento) {
       setErro("Nome, matrícula e data de nascimento são obrigatórios.");
       return;
     }
 
+    const cpfLimpo = limparCpf(cpfAluno);
+    if (cpfAluno.trim() && cpfLimpo.length !== 11) {
+      setErro("O CPF deve ter 11 dígitos.");
+      return;
+    }
+    const cepLimpo = cepAluno.replace(/\D/g, "");
+    if (cepAluno.trim() && cepLimpo.length !== 8) {
+      setErro("O CEP deve ter 8 dígitos.");
+      return;
+    }
+
+    emEnvioRef.current = true;
+    setEnviando(true);
     setErro(null);
-    salvar({
-      numeroMatricula: numeroMatricula.trim(),
-      nomeAluno: nomeAluno.trim(),
-      dataNascimento,
-      cpfAluno: cpfAluno.trim() ? limparCpf(cpfAluno) : null,
-      telefoneAluno: telefoneAluno.trim() || null,
-      emailAluno: emailAluno.trim() || null,
-      cepAluno: cepAluno.trim() || null,
-      enderecoAluno: enderecoAluno.trim() || null,
-      situacao,
-    });
+    try {
+      await salvar({
+        numeroMatricula: numeroMatricula.trim(),
+        nomeAluno: nomeAluno.trim(),
+        dataNascimento,
+        cpfAluno: cpfAluno.trim() ? cpfLimpo : null,
+        telefoneAluno: telefoneAluno.trim() || null,
+        emailAluno: emailAluno.trim() || null,
+        cepAluno: cepAluno.trim() ? cepLimpo : null,
+        enderecoAluno: enderecoAluno.trim() || null,
+        situacao,
+      });
+    } catch (e: unknown) {
+      setErro(e instanceof Error ? e.message : "Não foi possível salvar o aluno.");
+    } finally {
+      emEnvioRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (
@@ -55,6 +78,8 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <input
             value={nomeAluno}
             onChange={(evento) => setNomeAluno(evento.target.value)}
+            maxLength={100}
+            disabled={enviando}
             placeholder="Ex.: Beatriz Souza Lima"
           />
         </label>
@@ -64,6 +89,8 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <input
             value={numeroMatricula}
             onChange={(evento) => setNumeroMatricula(evento.target.value)}
+            maxLength={20}
+            disabled={enviando}
             placeholder="Ex.: 2026001"
           />
         </label>
@@ -74,6 +101,7 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
             type="date"
             value={dataNascimento}
             onChange={(evento) => setDataNascimento(evento.target.value)}
+            disabled={enviando}
           />
         </label>
 
@@ -82,13 +110,18 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <input
             value={cpfAluno}
             onChange={(evento) => setCpfAluno(evento.target.value)}
+            disabled={enviando}
             placeholder="Opcional"
           />
         </label>
 
         <label className="formulario-aluno__campo">
           <span>Situação</span>
-          <select value={situacao} onChange={(evento) => setSituacao(evento.target.value as SituacaoAluno)}>
+          <select
+            value={situacao}
+            onChange={(evento) => setSituacao(evento.target.value as SituacaoAluno)}
+            disabled={enviando}
+          >
             <option value="Ativo">Ativo</option>
             <option value="Inativo">Inativo</option>
             <option value="Transferido">Transferido</option>
@@ -100,6 +133,8 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <input
             value={telefoneAluno}
             onChange={(evento) => setTelefoneAluno(evento.target.value)}
+            maxLength={13}
+            disabled={enviando}
             placeholder="Opcional"
           />
         </label>
@@ -110,6 +145,8 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
             type="email"
             value={emailAluno}
             onChange={(evento) => setEmailAluno(evento.target.value)}
+            maxLength={100}
+            disabled={enviando}
             placeholder="Opcional"
           />
         </label>
@@ -119,6 +156,8 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <input
             value={cepAluno}
             onChange={(evento) => setCepAluno(evento.target.value)}
+            maxLength={9}
+            disabled={enviando}
             placeholder="Opcional"
           />
         </label>
@@ -128,6 +167,8 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <input
             value={enderecoAluno}
             onChange={(evento) => setEnderecoAluno(evento.target.value)}
+            maxLength={200}
+            disabled={enviando}
             placeholder="Opcional"
           />
         </label>
@@ -139,11 +180,16 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
         )}
 
         <div className="formulario-aluno__acoes">
-          <button type="button" className="formulario-aluno__botao-cancelar" onClick={cancelar}>
+          <button
+            type="button"
+            className="formulario-aluno__botao-cancelar"
+            onClick={cancelar}
+            disabled={enviando}
+          >
             Cancelar
           </button>
-          <button type="submit" className="formulario-aluno__botao-salvar">
-            {alunoEditando ? "Salvar alterações" : "Cadastrar aluno"}
+          <button type="submit" className="formulario-aluno__botao-salvar" disabled={enviando}>
+            {enviando ? "Salvando..." : alunoEditando ? "Salvar alterações" : "Cadastrar aluno"}
           </button>
         </div>
       </form>

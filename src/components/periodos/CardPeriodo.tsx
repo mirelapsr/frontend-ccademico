@@ -56,10 +56,14 @@ function CardPeriodo({ periodo, aoEditar, aoExcluir }: CardPeriodoProps) {
         </div>
       </div>
 
-      <footer className="card-periodo__rodape">
-        <span>Criado em: {formatarData(periodo.criadoEm.slice(0, 10))}</span>
-        <span>Atualizado em: {formatarData(periodo.atualizadoEm.slice(0, 10))}</span>
-      </footer>
+      {(periodo.criadoEm || periodo.atualizadoEm) && (
+        <footer className="card-periodo__rodape">
+          {periodo.criadoEm && <span>Criado em: {formatarData(periodo.criadoEm.slice(0, 10))}</span>}
+          {periodo.atualizadoEm && (
+            <span>Atualizado em: {formatarData(periodo.atualizadoEm.slice(0, 10))}</span>
+          )}
+        </footer>
+      )}
     </article>
   );
 }

@@ -9,6 +9,10 @@ interface ListaProfessoresProps {
   aoNovoProfessor: () => void;
   aoEditarProfessor: (idProfessor: number) => void;
   aoExcluirProfessor: (idProfessor: number) => void;
+  carregando?: boolean;
+  erro?: string | null;
+  aoDispensarErro?: () => void;
+  aoRecarregar?: () => void;
 }
 
 type FiltroSituacao = "todas" | SituacaoProfessor;
@@ -19,6 +23,10 @@ function ListaProfessores({
   aoNovoProfessor,
   aoEditarProfessor,
   aoExcluirProfessor,
+  carregando = false,
+  erro = null,
+  aoDispensarErro,
+  aoRecarregar,
 }: ListaProfessoresProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
@@ -44,6 +52,24 @@ function ListaProfessores({
           + Novo Professor
         </button>
       </header>
+
+      {erro && (
+        <div className="lista-professores__erro" role="alert">
+          <p>{erro}</p>
+          <div className="lista-professores__erro-acoes">
+            {aoRecarregar && (
+              <button type="button" onClick={aoRecarregar} disabled={carregando}>
+                Recarregar
+              </button>
+            )}
+            {aoDispensarErro && (
+              <button type="button" onClick={aoDispensarErro} aria-label="Dispensar aviso">
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="lista-professores__filtros">
         <label className="lista-professores__busca">
@@ -71,9 +97,11 @@ function ListaProfessores({
 
       {professoresFiltrados.length === 0 ? (
         <p className="lista-professores__vazio-geral">
-          {professores.length === 0
-            ? "Nenhum professor cadastrado ainda."
-            : "Nenhum professor encontrado para esses filtros."}
+          {carregando
+            ? "Carregando professores..."
+            : professores.length === 0
+              ? "Nenhum professor cadastrado ainda."
+              : "Nenhum professor encontrado para esses filtros."}
         </p>
       ) : (
         <div className="lista-professores__grade">

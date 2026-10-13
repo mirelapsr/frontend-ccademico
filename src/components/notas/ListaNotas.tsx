@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import type { Nota, Matricula, Aluno, Avaliacao, GradeCurricular, Materia, Turma } from "../../types";
+import type { Nota, Aluno, Avaliacao, GradeCurricular, Materia, Turma } from "../../types";
 import CardNota from "./CardNota";
 import "./ListaNotas.css";
 
 interface ListaNotasProps {
   notas: Nota[];
-  matriculas: Matricula[];
   alunos: Aluno[];
   avaliacoes: Avaliacao[];
   grades: GradeCurricular[];
@@ -20,7 +19,6 @@ type Ordenacao = "recentes" | "maior-nota" | "menor-nota";
 
 function ListaNotas({
   notas,
-  matriculas,
   alunos,
   avaliacoes,
   grades,
@@ -38,11 +36,10 @@ function ListaNotas({
     const buscaNormalizada = busca.trim().toLowerCase();
 
     const filtradas = notas.filter((nota) => {
-      const matricula = matriculas.find((item) => item.idMatricula === nota.matriculaIdMatricula);
-      const aluno = matricula ? alunos.find((item) => item.idAluno === matricula.alunoIdAluno) : undefined;
-      const avaliacao = avaliacoes.find((item) => item.idAvaliacao === nota.avaliacaoIdAvaliacao);
-      const grade = avaliacao ? grades.find((item) => item.idGrade === avaliacao.gradeIdGrade) : undefined;
-      const materia = grade ? materias.find((item) => item.idMateria === grade.materiaIdMateria) : undefined;
+      const aluno = alunos.find((item) => item.idAluno === nota.alunoId);
+      const avaliacao = avaliacoes.find((item) => item.idAvaliacao === nota.avaliacaoId);
+      const grade = avaliacao ? grades.find((item) => item.idGrade === avaliacao.gradeId) : undefined;
+      const materia = grade ? materias.find((item) => item.idMateria === grade.materiaId) : undefined;
 
       const combinaBusca =
         buscaNormalizada === "" ||
@@ -50,22 +47,22 @@ function ListaNotas({
         (avaliacao?.nomeAvaliacao ?? "").toLowerCase().includes(buscaNormalizada) ||
         (materia?.nomeMateria ?? "").toLowerCase().includes(buscaNormalizada);
 
-      const combinaAvaliacao = filtroAvaliacao === "todas" || nota.avaliacaoIdAvaliacao === filtroAvaliacao;
+      const combinaAvaliacao = filtroAvaliacao === "todas" || nota.avaliacaoId === filtroAvaliacao;
 
       return combinaBusca && combinaAvaliacao;
     });
 
     const ordenadas = [...filtradas];
     if (ordenacao === "maior-nota") {
-      ordenadas.sort((a, b) => b.valorNota - a.valorNota);
+      ordenadas.sort((a, b) => Number(b.valorNota) - Number(a.valorNota));
     } else if (ordenacao === "menor-nota") {
-      ordenadas.sort((a, b) => a.valorNota - b.valorNota);
+      ordenadas.sort((a, b) => Number(a.valorNota) - Number(b.valorNota));
     } else {
       ordenadas.sort((a, b) => (b.criadoEm ?? "").localeCompare(a.criadoEm ?? ""));
     }
 
     return ordenadas;
-  }, [notas, matriculas, alunos, avaliacoes, grades, materias, busca, filtroAvaliacao, ordenacao]);
+  }, [notas, alunos, avaliacoes, grades, materias, busca, filtroAvaliacao, ordenacao]);
 
   return (
     <section className="lista-notas">
@@ -128,7 +125,6 @@ function ListaNotas({
             <CardNota
               key={nota.idNota}
               nota={nota}
-              matriculas={matriculas}
               alunos={alunos}
               avaliacoes={avaliacoes}
               grades={grades}

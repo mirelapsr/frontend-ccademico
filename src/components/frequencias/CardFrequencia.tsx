@@ -1,10 +1,8 @@
-import type { Frequencia, Matricula, Aluno, Turma, GradeCurricular, Materia } from "../../types";
+import type { Frequencia, Aluno, Turma, GradeCurricular, Materia, SituacaoFrequencia } from "../../types";
 import "./CardFrequencia.css";
 
 interface CardFrequenciaProps {
   frequencia: Frequencia;
-  /** Listas completas — o card resolve matrícula → aluno/turma, e grade → matéria pelas FKs. */
-  matriculas: Matricula[];
   alunos: Aluno[];
   turmas: Turma[];
   grades: GradeCurricular[];
@@ -13,10 +11,16 @@ interface CardFrequenciaProps {
   aoExcluir: () => void;
 }
 
-const RUTULOS_STATUS: Record<Frequencia["status"], string> = {
+const ROTULOS_SITUACAO: Record<SituacaoFrequencia, string> = {
   Presente: "Presente",
-  Ausente: "Ausente",
-  Justificado: "Justificado",
+  Falta: "Ausente",
+  FaltaJustificada: "Justificado",
+};
+
+const CLASSES_SITUACAO: Record<SituacaoFrequencia, string> = {
+  Presente: "presente",
+  Falta: "ausente",
+  FaltaJustificada: "justificado",
 };
 
 function formatarData(iso: string): string {
@@ -30,7 +34,6 @@ function ValorOuVazio({ valor }: { valor: string | null | undefined }) {
 
 function CardFrequencia({
   frequencia,
-  matriculas,
   alunos,
   turmas,
   grades,
@@ -38,11 +41,10 @@ function CardFrequencia({
   aoEditar,
   aoExcluir,
 }: CardFrequenciaProps) {
-  const matricula = matriculas.find((item) => item.idMatricula === frequencia.matriculaIdMatricula);
-  const aluno = matricula ? alunos.find((item) => item.idAluno === matricula.alunoIdAluno) : undefined;
-  const turma = matricula ? turmas.find((item) => item.idTurma === matricula.turmaIdTurma) : undefined;
-  const grade = grades.find((item) => item.idGrade === frequencia.gradeIdGrade);
-  const materia = grade ? materias.find((item) => item.idMateria === grade.materiaIdMateria) : undefined;
+  const aluno = alunos.find((item) => item.idAluno === frequencia.alunoId);
+  const grade = grades.find((item) => item.idGrade === frequencia.gradeId);
+  const materia = grade ? materias.find((item) => item.idMateria === grade.materiaId) : undefined;
+  const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaId) : undefined;
 
   return (
     <article className="card-frequencia">
@@ -53,15 +55,15 @@ function CardFrequencia({
           </h3>
           <p className="card-frequencia__subtitulo">
             <IconeCalendario />
-            {formatarData(frequencia.dataAula)}
+            {formatarData(frequencia.dataFrequencia)}
           </p>
         </div>
 
         <div className="card-frequencia__acoes">
           <span
-            className={`card-frequencia__selo-status card-frequencia__selo-status--${frequencia.status.toLowerCase()}`}
+            className={`card-frequencia__selo-status card-frequencia__selo-status--${CLASSES_SITUACAO[frequencia.situacao]}`}
           >
-            {RUTULOS_STATUS[frequencia.status]}
+            {ROTULOS_SITUACAO[frequencia.situacao]}
           </span>
           <button type="button" className="card-frequencia__botao-editar" onClick={aoEditar}>
             Editar

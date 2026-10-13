@@ -18,9 +18,9 @@ interface GradeAvaliacoesProps {
   turmaSelecionada: number | "";
   gradeSelecionada: number | "";
   periodoSelecionado: number | "";
-  aoMudarTurma: (turmaIdTurma: number | "") => void;
-  aoMudarGrade: (gradeIdGrade: number | "") => void;
-  aoMudarPeriodo: (periodoIdPeriodo: number | "") => void;
+  aoMudarTurma: (turmaId: number | "") => void;
+  aoMudarGrade: (gradeId: number | "") => void;
+  aoMudarPeriodo: (periodoId: number | "") => void;
   itens: ItemAvaliacaoResumo[];
   aoLancarNotas: (idAvaliacao: number) => void;
 }
@@ -32,7 +32,7 @@ function nomeMateriaPorGrade(
 ): string {
   const grade = gradesDaTurma.find((item) => item.idGrade === idGrade);
   if (!grade) return "Matéria";
-  return materias.find((materia) => materia.idMateria === grade.materiaIdMateria)?.nomeMateria ?? "Matéria";
+  return materias.find((materia) => materia.idMateria === grade.materiaId)?.nomeMateria ?? "Matéria";
 }
 
 function GradeAvaliacoes({

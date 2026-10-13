@@ -1,104 +1,142 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ListaMaterias from "../components/materias/ListaMaterias";
 import FormularioMateria from "../components/materias/FormularioMateria";
 import ModalConfirmacao from "../components/ui/ModalConfirmacao";
 import Toast from "../components/ui/Toast";
-import { materiasMock } from "../mock";
-import { useColecaoPersistida } from "../hooks/useColecaoPersistida";
-import { CHAVES_LOCALSTORAGE } from "../storage";
-import type { Materia, MateriaEntrada } from "../types";
-
-type Tela = "lista" | "formulario";
-
-function proximoId(materias: Materia[]): number {
-  return materias.reduce((maior, materia) => Math.max(maior, materia.idMateria), 0) + 1;
-}
+import {
+  atualizarMateria,
+  criarMateria,
+  ehErroDeVinculo,
+  excluirMateria,
+  listarMaterias,
+  mensagemDeErroMateria,
+  type CriarMateriaDTO,
+} from "../services/materiaService";
+import type { Materia } from "../types";
 
 function PaginaMaterias() {
-  const [materias, setMaterias] = useColecaoPersistida<Materia>(
-    CHAVES_LOCALSTORAGE.materias,
-    materiasMock
-  );
+  const [materias, setMaterias] = useState<Materia[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const [telaAtual, setTelaAtual] = useState<Tela>("lista");
+  const [modalAberto, setModalAberto] = useState(false);
   const [materiaEmEdicao, setMateriaEmEdicao] = useState<Materia | null>(null);
 
   const [materiaParaExcluir, setMateriaParaExcluir] = useState<Materia | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
+  // --- Carregamento ----------------------------------------------------------
+
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      setMaterias(await listarMaterias());
+    } catch (e) {
+      setErro(mensagemDeErroMateria(e, "Não foi possível carregar as matérias."));
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  // --- Formulário (criar / editar) ---------------------------------------------
+
   function abrirNovaMateria() {
     setMateriaEmEdicao(null);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function abrirEdicaoMateria(idMateria: number) {
     const materia = materias.find((item) => item.idMateria === idMateria) ?? null;
+    if (!materia) return;
     setMateriaEmEdicao(materia);
-    setTelaAtual("formulario");
+    setModalAberto(true);
   }
 
   function cancelarFormulario() {
     setMateriaEmEdicao(null);
-    setTelaAtual("lista");
+    setModalAberto(false);
   }
 
-  function adicionarMateria(dados: MateriaEntrada) {
-    const novaMateria: Materia = {
-      ...dados,
-      idMateria: proximoId(materias),
-    };
-    setMaterias((atual) => [...atual, novaMateria]);
-    setTelaAtual("lista");
-    setMensagemSucesso("Matéria criada com sucesso!");
+  
+  async function salvarFormulario(dados: CriarMateriaDTO): Promise<void> {
+    try {
+      if (materiaEmEdicao) {
+        const atualizada = await atualizarMateria(materiaEmEdicao.idMateria, dados);
+        setMaterias((atual) =>
+          atual.map((m) => (m.idMateria === atualizada.idMateria ? atualizada : m))
+        );
+        setMensagemSucesso("Matéria atualizada com sucesso!");
+      } else {
+        const nova = await criarMateria(dados);
+        setMaterias((atual) => [...atual, nova]);
+        setMensagemSucesso("Matéria criada com sucesso!");
+      }
+    } catch (e) {
+      throw new Error(mensagemDeErroMateria(e, "Não foi possível salvar a matéria."));
+    }
+    cancelarFormulario();
   }
 
-  function atualizarMateria(idMateria: number, dados: MateriaEntrada) {
-    setMaterias((atual) =>
-      atual.map((materia) => (materia.idMateria === idMateria ? { ...materia, ...dados } : materia))
-    );
-    setMateriaEmEdicao(null);
-    setTelaAtual("lista");
-    setMensagemSucesso("Matéria atualizada com sucesso!");
+  // --- Exclusão ------------------------------------------------------------------
+
+  function pedirConfirmacaoExclusao(idMateria: number) {
+    setMateriaParaExcluir(materias.find((item) => item.idMateria === idMateria) ?? null);
   }
 
-  function handleSalvarFormulario(dados: MateriaEntrada) {
-    if (materiaEmEdicao) {
-      atualizarMateria(materiaEmEdicao.idMateria, dados);
-    } else {
-      adicionarMateria(dados);
+  const cancelarExclusao = useCallback(() => {
+    if (!excluindo) setMateriaParaExcluir(null);
+  }, [excluindo]);
+
+  async function confirmarExclusao() {
+    if (!materiaParaExcluir || excluindo) return;
+    const alvo = materiaParaExcluir;
+
+    setExcluindo(true);
+    setErro(null);
+    try {
+      await excluirMateria(alvo.idMateria);
+      setMaterias((atual) => atual.filter((m) => m.idMateria !== alvo.idMateria));
+      setMensagemSucesso("Deletado com sucesso!");
+    } catch (e) {
+      setErro(
+        ehErroDeVinculo(e)
+          ? `Não é possível excluir "${alvo.nomeMateria}": a matéria está vinculada a grades ` +
+              `curriculares ou boletins. Remova esses vínculos e tente novamente.`
+          : mensagemDeErroMateria(e, "Não foi possível excluir a matéria.")
+      );
+    } finally {
+      setExcluindo(false);
+      setMateriaParaExcluir(null);
     }
   }
 
-  function pedirConfirmacaoExclusao(idMateria: number) {
-    const materia = materias.find((item) => item.idMateria === idMateria) ?? null;
-    setMateriaParaExcluir(materia);
-  }
-
-  function confirmarExclusao() {
-    if (!materiaParaExcluir) return;
-    setMaterias((atual) => atual.filter((materia) => materia.idMateria !== materiaParaExcluir.idMateria));
-    setMateriaParaExcluir(null);
-    setMensagemSucesso("Deletado com sucesso!");
-  }
-
-  function cancelarExclusao() {
-    setMateriaParaExcluir(null);
-  }
+  const fecharToast = useCallback(() => setMensagemSucesso(null), []);
 
   return (
     <>
-      {telaAtual === "lista" ? (
+      {!modalAberto ? (
         <ListaMaterias
           materias={materias}
+          carregando={carregando}
+          erro={erro}
+          aoDispensarErro={() => setErro(null)}
+          aoRecarregar={() => void carregar()}
           aoNovaMateria={abrirNovaMateria}
           aoEditarMateria={abrirEdicaoMateria}
           aoExcluirMateria={pedirConfirmacaoExclusao}
         />
       ) : (
         <FormularioMateria
+          key={materiaEmEdicao?.idMateria ?? "nova"}
           materiaEditando={materiaEmEdicao}
-          salvar={handleSalvarFormulario}
+          salvar={salvarFormulario}
           cancelar={cancelarFormulario}
         />
       )}
@@ -108,18 +146,14 @@ function PaginaMaterias() {
           titulo="Excluir matéria"
           mensagem={`Tem certeza que deseja excluir "${materiaParaExcluir.nomeMateria}"? Essa ação não pode ser desfeita.`}
           textoCancelar="Cancelar"
-          textoConfirmar="Excluir"
-          aoConfirmar={confirmarExclusao}
+          textoConfirmar={excluindo ? "Excluindo..." : "Excluir"}
+          aoConfirmar={() => void confirmarExclusao()}
           aoCancelar={cancelarExclusao}
         />
       )}
 
       {mensagemSucesso && (
-        <Toast
-          mensagem={mensagemSucesso}
-          tipo="sucesso"
-          aoFechar={() => setMensagemSucesso(null)}
-        />
+        <Toast mensagem={mensagemSucesso} tipo="sucesso" aoFechar={fecharToast} />
       )}
     </>
   );
