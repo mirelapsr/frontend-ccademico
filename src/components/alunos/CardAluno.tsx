@@ -4,7 +4,6 @@ import "./CardAluno.css";
 
 interface CardAlunoProps {
   aluno: Aluno;
-  /** "Nome da Turma (Turno)" da matrícula ativa do aluno, ou undefined se não houver. */
   nomeTurma?: string;
   aoEditar: () => void;
   aoExcluir: () => void;

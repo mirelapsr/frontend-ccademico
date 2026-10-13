@@ -4,7 +4,6 @@ import "./CardProfessor.css";
 
 interface CardProfessorProps {
   professor: Professor;
-  /** Lista completa de escolas — o card resolve o nome pela FK `escolaId`. */
   escolas: Escola[];
   aoEditar: () => void;
   aoExcluir: () => void;

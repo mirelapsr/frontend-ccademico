@@ -4,10 +4,7 @@ import "./FormularioEscola.css";
 
 interface FormularioEscolaProps {
   escolaEditando?: Escola | null;
-  /**
-   * Persiste na API. Deve LANÇAR em caso de falha: o formulário captura,
-   * mostra a mensagem no topo e continua aberto com os dados preenchidos.
-   */
+
   salvar: (dados: EscolaEntrada) => Promise<void>;
   cancelar: () => void;
 }
@@ -25,7 +22,6 @@ function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscola
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  // `useState` é assíncrono: o ref bloqueia o 2º clique no mesmo instante.
   const emEnvioRef = useRef(false);
 
   async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
@@ -58,7 +54,7 @@ function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscola
         telefoneEscola: telefoneEscola.trim() || null,
         emailEscola: emailEscola.trim() || null,
       });
-      // Sucesso: a página fecha o formulário.
+      
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível salvar a escola.");
     } finally {
@@ -106,7 +102,6 @@ function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscola
           <span>CNPJ *</span>
           <input
             value={cnpj}
-            // Só dígitos (o banco guarda VARCHAR(14) sem pontuação); colar "12.345.678/0001-90" funciona.
             onChange={(evento) => setCnpj(evento.target.value.replace(/\D/g, "").slice(0, 14))}
             inputMode="numeric"
             maxLength={14}

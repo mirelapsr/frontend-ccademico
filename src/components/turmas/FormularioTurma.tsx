@@ -4,7 +4,6 @@ import "./FormularioTurma.css";
 
 interface FormularioTurmaProps {
   turmaEditando?: Turma | null;
-  /** Escolas disponíveis no mock, usadas para preencher o <select> de instituição. */
   escolas: Escola[];
   salvar: (dados: TurmaEntrada) => Promise<void>;
   cancelar: () => void;

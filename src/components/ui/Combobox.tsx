@@ -32,7 +32,6 @@ export default function Combobox({
   const [termoBusca, setTermoBusca] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Normaliza string ignorando maiúsculas/minúsculas e acentuações
   const normalizar = (str: string) => {
     return str
       .normalize("NFD")
@@ -40,12 +39,10 @@ export default function Combobox({
       .toLowerCase();
   };
 
-  // Encontra a opção atualmente selecionada
   const opcaoAtual = useMemo(() => {
     return opcoes.find((op) => op.valor === valorSelecionado);
   }, [opcoes, valorSelecionado]);
 
-  // Sincroniza o input com o rótulo da opção selecionada
   useEffect(() => {
     if (opcaoAtual) {
       setTermoBusca(opcaoAtual.rotulo);
@@ -54,7 +51,6 @@ export default function Combobox({
     }
   }, [opcaoAtual, valorSelecionado]);
 
-  // Filtra as opções em tempo real (rótulo ou subtitulo)
   const opcoesFiltradas = useMemo(() => {
     if (!aberto || (opcaoAtual && termoBusca === opcaoAtual.rotulo)) {
       return opcoes;
@@ -67,7 +63,6 @@ export default function Combobox({
     });
   }, [opcoes, termoBusca, aberto, opcaoAtual]);
 
-  // Fecha o menu ao clicar fora e restaura o valor anterior se nada foi selecionado
   useEffect(() => {
     function handleClickFora(event: globalThis.MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {

@@ -4,10 +4,7 @@ import "./FormularioPeriodo.css";
 
 interface FormularioPeriodoProps {
   periodoEditando?: Periodo | null;
-  /**
-   * Persiste na API. Deve LANÇAR em caso de falha: o formulário captura,
-   * mostra a mensagem no topo e continua aberto com os dados preenchidos.
-   */
+
   salvar: (dados: PeriodoEntrada) => Promise<void>;
   cancelar: () => void;
 }
@@ -58,7 +55,7 @@ function FormularioPeriodo({ periodoEditando, salvar, cancelar }: FormularioPeri
         dataFim,
         situacao,
       });
-      // Sucesso: a página fecha o formulário.
+
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível salvar o período.");
     } finally {

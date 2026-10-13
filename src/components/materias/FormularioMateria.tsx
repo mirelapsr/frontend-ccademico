@@ -5,10 +5,6 @@ import "./FormularioMateria.css";
 
 interface FormularioMateriaProps {
   materiaEditando?: Materia | null;
-  /**
-   * Persiste na API. Deve LANÇAR em caso de falha: o formulário captura,
-   * mostra a mensagem no topo e continua aberto com os dados preenchidos.
-   */
   salvar: (dados: CriarMateriaDTO) => Promise<void>;
   cancelar: () => void;
 }
@@ -35,7 +31,6 @@ function FormularioMateria({ materiaEditando, salvar, cancelar }: FormularioMate
       return;
     }
 
-    // A API exige carga horária inteira e maior que zero (MateriaEntrada).
     const horas = Number(cargaHoraria);
     if (!cargaHoraria.trim() || !Number.isInteger(horas) || horas <= 0) {
       setErro("A carga horária é obrigatória e deve ser um número inteiro maior que zero.");
@@ -47,7 +42,7 @@ function FormularioMateria({ materiaEditando, salvar, cancelar }: FormularioMate
     setErro(null);
     try {
       await salvar({ nomeMateria: nomeMateria.trim(), cargaHoraria: horas });
-      // Sucesso: a página fecha o formulário.
+
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível salvar a matéria.");
     } finally {

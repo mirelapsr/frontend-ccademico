@@ -5,7 +5,6 @@ import "./FormularioProfessor.css";
 
 interface FormularioProfessorProps {
   professorEditando?: Professor | null;
-  /** Escolas disponíveis no localStorage, para o <select> de vínculo. */
   escolas: Escola[];
   salvar: (dados: ProfessorEntrada) => Promise<void>;
   cancelar: () => void;

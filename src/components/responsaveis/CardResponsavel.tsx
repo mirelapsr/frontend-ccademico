@@ -40,8 +40,6 @@ function ValorOuVazio({ valor }: { valor: string | null | undefined }) {
 }
 
 function CardResponsavel({ responsavel, aoEditar, aoExcluir }: CardResponsavelProps) {
-  // Acomoda tanto a convenção camelCase (criadoEm / atualizadoEm)
-  // quanto snake_case (criado_em / atualizado_em) ou adicionadoEm
   const resp = responsavel as Record<string, any>;
   const dataCriacao = resp.criadoEm ?? resp.criado_em ?? resp.adicionadoEm ?? resp.adicionado_em;
   const dataAtualizacao = resp.atualizadoEm ?? resp.atualizado_em ?? resp.alteradoEm ?? resp.alterado_em;

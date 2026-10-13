@@ -3,7 +3,6 @@ import "./CardMatricula.css";
 
 interface CardMatriculaProps {
   matricula: Matricula;
-  /** Listas completas — o card resolve aluno e turma pelas FKs. */
   alunos: Aluno[];
   turmas: Turma[];
   aoEditar: () => void;
@@ -18,8 +17,7 @@ const RUTULOS_TURNO: Record<Turma["turno"], string> = {
 };
 
 function formatarData(iso: string): string {
-  // dataMatricula vem como "YYYY-MM-DD"; força meio-dia local para não
-  // sofrer o "off-by-one" de fuso ao converter para Date.
+
   return new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR");
 }
 

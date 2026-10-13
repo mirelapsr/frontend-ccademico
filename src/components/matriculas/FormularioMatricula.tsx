@@ -4,15 +4,9 @@ import "./FormularioMatricula.css";
 
 interface FormularioMatriculaProps {
   matriculaEditando?: Matricula | null;
-  /** Alunos cadastrados, para o <select> de aluno. */
   alunos: Aluno[];
-  /** Turmas disponíveis, para o <select> de turma. */
   turmas: Turma[];
-  /**
-   * Espelha a regra do trigger: recebe o `alunoId` candidato e deve
-   * responder se já existe, para esse aluno, outra matrícula com
-   * `situacao === "Ativa"` (a que está sendo editada não conta).
-   */
+
   existeOutraMatriculaAtiva: (alunoId: number) => boolean;
   salvar: (dados: MatriculaEntrada) => Promise<void> | void;
   cancelar: () => void;

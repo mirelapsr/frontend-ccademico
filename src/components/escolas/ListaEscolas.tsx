@@ -19,7 +19,6 @@ type FiltroRede = "todas" | "municipal" | "estadual";
 
 
 function inferirRede(escola: Escola): FiltroRede | "outra" {
-  // Usa a rede cadastrada no banco; se vazia, cai na dedução pelo nome (comportamento original).
   const nomeEmMinusculas = (escola.redeEnsino || escola.nomeEscola).toLowerCase();
   if (nomeEmMinusculas.includes("municipal")) return "municipal";
   if (nomeEmMinusculas.includes("estadual")) return "estadual";

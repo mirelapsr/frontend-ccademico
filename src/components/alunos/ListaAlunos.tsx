@@ -5,7 +5,6 @@ import "./ListaAlunos.css";
 
 interface ListaAlunosProps {
   alunos: Aluno[];
-  /** Mapa idAluno -> "Nome da Turma (Turno)", ou undefined sem matrícula ativa. */
   nomeTurmaPorAluno: Record<number, string | undefined>;
   aoNovoAluno: () => void;
   aoEditarAluno: (idAluno: number) => void;

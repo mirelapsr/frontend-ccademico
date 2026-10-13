@@ -37,7 +37,6 @@ function ModalConfirmacao({
         aria-modal="true"
         aria-labelledby="modal-confirmacao-titulo"
         aria-describedby="modal-confirmacao-mensagem"
-        // Impede que o clique dentro da caixa "vaze" pro overlay e feche o modal.
         onClick={(evento) => evento.stopPropagation()}
       >
         <h3 id="modal-confirmacao-titulo">{titulo}</h3>

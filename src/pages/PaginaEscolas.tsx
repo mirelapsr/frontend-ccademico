@@ -26,7 +26,7 @@ function PaginaEscolas() {
 
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
-  // --- Carregamento ----------------------------------------------------------
+  // Carregamento 
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -44,7 +44,7 @@ function PaginaEscolas() {
     void carregar();
   }, [carregar]);
 
-  // --- Formulário (criar / editar) ---------------------------------------------
+  // Formulário (criar /editar) 
 
   function abrirNovaEscola() {
     setEscolaEmEdicao(null);
@@ -63,7 +63,7 @@ function PaginaEscolas() {
     setModalAberto(false);
   }
 
-  /** Lança em caso de falha: o formulário exibe o erro e permanece aberto. */
+
   async function salvarFormulario(dados: EscolaEntrada): Promise<void> {
     try {
       if (escolaEmEdicao) {
@@ -83,7 +83,7 @@ function PaginaEscolas() {
     cancelarFormulario();
   }
 
-  // --- Exclusão ------------------------------------------------------------------
+  // Exclusão 
 
   function pedirConfirmacaoExclusao(idEscola: number) {
     setEscolaParaExcluir(escolas.find((item) => item.idEscola === idEscola) ?? null);
@@ -101,7 +101,6 @@ function PaginaEscolas() {
     setErro(null);
     try {
       await excluirEscola(alvo.idEscola);
-      // Atualiza a lista localmente: sem novo GET e sem recarregar a página.
       setEscolas((atual) => atual.filter((e) => e.idEscola !== alvo.idEscola));
       setMensagemSucesso("Deletado com sucesso!");
     } catch (e) {

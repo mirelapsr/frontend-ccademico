@@ -3,7 +3,6 @@ import "./CardTurma.css";
 
 interface CardTurmaProps {
   turma: Turma;
-  /** Lista completa de escolas — o card resolve o nome pela FK `escolaId`. */
   escolas: Escola[];
   aoEditar: () => void;
   aoExcluir: () => void;
