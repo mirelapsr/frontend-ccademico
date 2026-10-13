@@ -12,21 +12,6 @@ interface FormularioGradeProps {
   cancelar: () => void;
 }
 
-function anoAtual(): number {
-  return new Date().getFullYear();
-}
-
-function extrairId(objeto: any, chaves: string[], fallback: number): number {
-  if (!objeto) return fallback;
-  for (const chave of chaves) {
-    const val = objeto[chave];
-    if (val !== undefined && val !== null && Number(val) > 0) {
-      return Number(val);
-    }
-  }
-  return fallback;
-}
-
 function FormularioGrade({
   gradeEditando,
   turmas,
@@ -36,8 +21,6 @@ function FormularioGrade({
   salvar,
   cancelar,
 }: FormularioGradeProps) {
-  const g = gradeEditando as Record<string, any> | undefined;
-
   const [turmaId, setTurmaId] = useState<number>(gradeEditando?.turmaId ?? turmas[0]?.idTurma ?? 0);
   const [materiaId, setMateriaId] = useState<number>(gradeEditando?.materiaId ?? materias[0]?.idMateria ?? 0);
   const [professorId, setProfessorId] = useState<number>(
@@ -62,10 +45,6 @@ function FormularioGrade({
   async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     if (emEnvioRef.current) return;
-
-    const tId = Number(turmaId);
-    const mId = Number(materiaId);
-    const pId = Number(professorId);
 
     if (!turmaId || !materiaId || !professorId) {
       setErro("Turma, matéria e professor são obrigatórios.");

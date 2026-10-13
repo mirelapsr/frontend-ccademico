@@ -33,23 +33,22 @@ function ListaGrades({
   const [busca, setBusca] = useState("");
   const [filtroAno, setFiltroAno] = useState<"todos" | number>("todos");
 
-  const anosDisponiveis = useMemo(
-    () => Array.from(new Set(grades.map((grade) => grade.anoLetivo))).sort((a, b) => b - a),
-    [grades]
-  );
+  const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
+
+  const anosDisponiveis = useMemo(() => {
+    const anos = grades
+      .map((g) => mapaTurmas.get(g.turmaId)?.anoLetivo)
+      .filter((ano): ano is number => typeof ano === "number");
+    return Array.from(new Set(anos)).sort((a, b) => b - a);
+  }, [grades, mapaTurmas]);
 
   const gradesFiltradas = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return grades.filter((grade) => {
-      const g = grade as Record<string, any>;
-      const turmaId = grade.turmaIdTurma ?? g.turmaId;
-      const materiaId = grade.materiaIdMateria ?? g.materiaId;
-      const professorId = grade.professorIdProfessor ?? g.professorId;
-
-      const turma = turmas.find((item) => item.idTurma === turmaId);
-      const materia = materias.find((item) => item.idMateria === materiaId);
-      const professor = professores.find((item) => item.idProfessor === professorId);
+      const turma = mapaTurmas.get(grade.turmaId);
+      const materia = materias.find((item) => item.idMateria === grade.materiaId);
+      const professor = professores.find((item) => item.idProfessor === grade.professorId);
 
       const combinaBusca =
         buscaNormalizada === "" ||
@@ -57,11 +56,11 @@ function ListaGrades({
         (turma?.nomeTurma ?? "").toLowerCase().includes(buscaNormalizada) ||
         (professor?.nomeProf ?? "").toLowerCase().includes(buscaNormalizada);
 
-      const combinaFiltro = filtroAno === "todos" || grade.anoLetivo === filtroAno;
+      const combinaFiltro = filtroAno === "todos" || turma?.anoLetivo === filtroAno;
 
       return combinaBusca && combinaFiltro;
     });
-  }, [grades, turmas, materias, professores, busca, filtroAno]);
+  }, [grades, mapaTurmas, materias, professores, busca, filtroAno]);
 
   return (
     <section className="lista-grades">
@@ -132,21 +131,17 @@ function ListaGrades({
         </p>
       ) : (
         <div className="lista-grades__grade">
-          {gradesFiltradas.map((grade) => {
-            const g = grade as Record<string, any>;
-            const idGrade = grade.idGrade ?? g.idGradeCurricular ?? 0;
-            return (
-              <CardGradeCurricular
-                key={idGrade}
-                grade={grade}
-                turmas={turmas}
-                materias={materias}
-                professores={professores}
-                aoEditar={aoEditarGrade}
-                aoExcluir={aoExcluirGrade}
-              />
-            );
-          })}
+          {gradesFiltradas.map((grade) => (
+            <CardGradeCurricular
+              key={grade.idGrade}
+              grade={grade}
+              turmas={turmas}
+              materias={materias}
+              professores={professores}
+              aoEditar={aoEditarGrade}
+              aoExcluir={aoExcluirGrade}
+            />
+          ))}
         </div>
       )}
     </section>

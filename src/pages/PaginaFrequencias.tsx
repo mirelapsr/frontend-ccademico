@@ -34,16 +34,14 @@ function hoje(): string {
 function PaginaFrequencias() {
   const {
     dados: frequencias,
-    carregando: carregandoFrequencias,
     erro: erroFrequencias,
     recarregar: recarregarFrequencias,
   } = useLista<Frequencia>("/frequencias");
-  const { dados: matriculas, carregando: carregandoMatriculas } = useLista<Matricula>("/matriculas");
-  const { dados: alunos, carregando: carregandoAlunos } = useLista<Aluno>("/alunos");
-  const { dados: grades, carregando: carregandoGrades } =
-    useLista<GradeCurricular>("/grades");
-  const { dados: materias, carregando: carregandoMaterias } = useLista<Materia>("/materias");
-  const { dados: turmas, carregando: carregandoTurmas } = useLista<Turma>("/turmas");
+  const { dados: matriculas } = useLista<Matricula>("/matriculas");
+  const { dados: alunos } = useLista<Aluno>("/alunos");
+  const { dados: grades } = useLista<GradeCurricular>("/grades");
+  const { dados: materias } = useLista<Materia>("/materias");
+  const { dados: turmas } = useLista<Turma>("/turmas");
 
   const [turmaSelecionada, setTurmaSelecionada] = useState<number | "">("");
   const [gradeSelecionada, setGradeSelecionada] = useState<number | "">("");
@@ -51,14 +49,6 @@ function PaginaFrequencias() {
   const [estadoChamada, setEstadoChamada] = useState<Record<number, EstadoLinha>>({});
   const [salvando, setSalvando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-
-  const carregando =
-    carregandoFrequencias ||
-    carregandoMatriculas ||
-    carregandoAlunos ||
-    carregandoGrades ||
-    carregandoMaterias ||
-    carregandoTurmas;
 
   const gradesDaTurma = useMemo(
     () => (turmaSelecionada === "" ? [] : grades.filter((g) => g.turmaId === turmaSelecionada)),

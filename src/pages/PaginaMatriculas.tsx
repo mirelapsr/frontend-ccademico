@@ -23,21 +23,16 @@ interface Feedback {
 function PaginaMatriculas() {
   const {
     dados: matriculas,
-    carregando: carregandoMatriculas,
-    erro: erroMatriculas,
     recarregar: recarregarMatriculas,
   } = useLista<Matricula>("/matriculas");
-  const { dados: alunos, carregando: carregandoAlunos, erro: erroAlunos } = useLista<Aluno>("/alunos");
-  const { dados: turmas, carregando: carregandoTurmas, erro: erroTurmas } = useLista<Turma>("/turmas");
+  const { dados: alunos } = useLista<Aluno>("/alunos");
+  const { dados: turmas } = useLista<Turma>("/turmas");
 
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [matriculaEmEdicao, setMatriculaEmEdicao] = useState<Matricula | null>(null);
   const [matriculaParaExcluir, setMatriculaParaExcluir] = useState<Matricula | null>(null);
   const [excluindo, setExcluindo] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-
-  const carregando = carregandoMatriculas || carregandoAlunos || carregandoTurmas;
-  const erro = erroMatriculas ?? erroAlunos ?? erroTurmas;
 
   function abrirNovaMatricula() {
     setMatriculaEmEdicao(null);

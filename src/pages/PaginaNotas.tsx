@@ -39,17 +39,16 @@ function notaEhInvalida(valorNota: string): boolean {
 function PaginaNotas() {
   const {
     dados: notas,
-    carregando: carregandoNotas,
     erro: erroNotas,
     recarregar: recarregarNotas,
   } = useLista<Nota>("/notas");
-  const { dados: matriculas, carregando: carregandoMatriculas } = useLista<Matricula>("/matriculas");
-  const { dados: alunos, carregando: carregandoAlunos } = useLista<Aluno>("/alunos");
-  const { dados: avaliacoes, carregando: carregandoAvaliacoes } = useLista<Avaliacao>("/avaliacoes");
-  const { dados: grades, carregando: carregandoGrades } = useLista<GradeCurricular>("/grades");
-  const { dados: materias, carregando: carregandoMaterias } = useLista<Materia>("/materias");
-  const { dados: turmas, carregando: carregandoTurmas } = useLista<Turma>("/turmas");
-  const { dados: periodos, carregando: carregandoPeriodos } = useLista<Periodo>("/periodos");
+  const { dados: matriculas } = useLista<Matricula>("/matriculas");
+  const { dados: alunos } = useLista<Aluno>("/alunos");
+  const { dados: avaliacoes } = useLista<Avaliacao>("/avaliacoes");
+  const { dados: grades } = useLista<GradeCurricular>("/grades");
+  const { dados: materias } = useLista<Materia>("/materias");
+  const { dados: turmas } = useLista<Turma>("/turmas");
+  const { dados: periodos } = useLista<Periodo>("/periodos");
 
   const [turmaSelecionada, setTurmaSelecionada] = useState<number | "">("");
   const [gradeSelecionada, setGradeSelecionada] = useState<number | "">("");
@@ -60,17 +59,7 @@ function PaginaNotas() {
   const [modalNotaGeralAberto, setModalNotaGeralAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-
-  const carregandoGeral =
-    carregandoNotas ||
-    carregandoMatriculas ||
-    carregandoAlunos ||
-    carregandoAvaliacoes ||
-    carregandoGrades ||
-    carregandoMaterias ||
-    carregandoTurmas ||
-    carregandoPeriodos;
-
+  
   const gradesDaTurma = useMemo(
     () => (turmaSelecionada === "" ? [] : grades.filter((grade) => grade.turmaId === turmaSelecionada)),
     [grades, turmaSelecionada]
