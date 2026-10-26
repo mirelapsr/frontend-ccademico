@@ -1,10 +1,17 @@
 import { useRef, useState, type FormEvent } from "react";
 import type { Escola, EscolaEntrada } from "../../types";
+import {
+  formatarCnpj,
+  formatarTelefone,
+  limparCnpj,
+  limparDigitos,
+  limparTelefone,
+  validarCnpj,
+} from "../../utils/formatadores";
 import "./FormularioEscola.css";
 
 interface FormularioEscolaProps {
   escolaEditando?: Escola | null;
-
   salvar: (dados: EscolaEntrada) => Promise<void>;
   cancelar: () => void;
 }
@@ -14,10 +21,10 @@ const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscolaProps) {
   const [nomeEscola, setNomeEscola] = useState(escolaEditando?.nomeEscola ?? "");
   const [codigoInep, setCodigoInep] = useState(escolaEditando?.codigoInep ?? "");
-  const [cnpj, setCnpj] = useState(escolaEditando?.cnpj ?? "");
+  const [cnpj, setCnpj] = useState(formatarCnpj(escolaEditando?.cnpj ?? ""));
   const [redeEnsino, setRedeEnsino] = useState(escolaEditando?.redeEnsino ?? "");
   const [enderecoEscola, setEnderecoEscola] = useState(escolaEditando?.enderecoEscola ?? "");
-  const [telefoneEscola, setTelefoneEscola] = useState(escolaEditando?.telefoneEscola ?? "");
+  const [telefoneEscola, setTelefoneEscola] = useState(formatarTelefone(escolaEditando?.telefoneEscola ?? ""));
   const [emailEscola, setEmailEscola] = useState(escolaEditando?.emailEscola ?? "");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -32,10 +39,29 @@ function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscola
       setErro("O nome da escola é obrigatório.");
       return;
     }
-    if (cnpj.length !== 14) {
+
+    const inepLimpo = limparDigitos(codigoInep);
+    if (codigoInep.trim() && inepLimpo.length !== 8) {
+      setErro("O código INEP deve conter exatamente 8 dígitos numéricos.");
+      return;
+    }
+
+    const cnpjLimpo = limparCnpj(cnpj);
+    if (!cnpjLimpo || cnpjLimpo.length !== 14) {
       setErro("O CNPJ é obrigatório e deve ter 14 dígitos.");
       return;
     }
+    if (!validarCnpj(cnpjLimpo)) {
+      setErro("CNPJ inválido. Verifique os números digitados.");
+      return;
+    }
+
+    const telLimpo = limparTelefone(telefoneEscola);
+    if (telefoneEscola.trim() && ![10, 11].includes(telLimpo.length)) {
+      setErro("O telefone deve ter DDD + número (10 ou 11 dígitos).");
+      return;
+    }
+
     if (emailEscola.trim() && !REGEX_EMAIL.test(emailEscola.trim())) {
       setErro("Informe um e-mail válido.");
       return;
@@ -47,14 +73,13 @@ function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscola
     try {
       await salvar({
         nomeEscola: nomeEscola.trim(),
-        codigoInep: codigoInep.trim() || null,
-        cnpj,
+        codigoInep: codigoInep.trim() ? inepLimpo : null,
+        cnpj: cnpjLimpo,
         redeEnsino: redeEnsino.trim() || null,
         enderecoEscola: enderecoEscola.trim() || null,
-        telefoneEscola: telefoneEscola.trim() || null,
+        telefoneEscola: telefoneEscola.trim() ? telLimpo : null,
         emailEscola: emailEscola.trim() || null,
       });
-      
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível salvar a escola.");
     } finally {
@@ -91,9 +116,9 @@ function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscola
           <span>Código INEP</span>
           <input
             value={codigoInep}
-            onChange={(evento) => setCodigoInep(evento.target.value)}
+            onChange={(evento) => setCodigoInep(limparDigitos(evento.target.value).slice(0, 8))}
             maxLength={8}
-            placeholder="Opcional"
+            placeholder="8 dígitos (opcional)"
             disabled={enviando}
           />
         </label>
@@ -102,10 +127,9 @@ function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscola
           <span>CNPJ *</span>
           <input
             value={cnpj}
-            onChange={(evento) => setCnpj(evento.target.value.replace(/\D/g, "").slice(0, 14))}
-            inputMode="numeric"
-            maxLength={14}
-            placeholder="14 dígitos, sem pontuação"
+            onChange={(evento) => setCnpj(formatarCnpj(evento.target.value))}
+            maxLength={18}
+            placeholder="00.000.000/0000-00"
             disabled={enviando}
           />
         </label>
@@ -143,9 +167,9 @@ function FormularioEscola({ escolaEditando, salvar, cancelar }: FormularioEscola
           <span>Telefone</span>
           <input
             value={telefoneEscola}
-            onChange={(evento) => setTelefoneEscola(evento.target.value)}
-            maxLength={13}
-            placeholder="Opcional"
+            onChange={(evento) => setTelefoneEscola(formatarTelefone(evento.target.value))}
+            maxLength={15}
+            placeholder="(00) 0000-0000"
             disabled={enviando}
           />
         </label>

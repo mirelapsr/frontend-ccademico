@@ -1,6 +1,14 @@
 import { useRef, useState, type FormEvent } from "react";
 import type { Aluno, AlunoEntrada, SituacaoAluno } from "../../types";
-import { limparCpf } from "../../utils/formatadores";
+import {
+  formatarCep,
+  formatarCpf,
+  formatarTelefone,
+  limparCep,
+  limparCpf,
+  limparTelefone,
+  validarCpf,
+} from "../../utils/formatadores";
 import "./FormularioAluno.css";
 
 interface FormularioAlunoProps {
@@ -13,10 +21,10 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
   const [numeroMatricula, setNumeroMatricula] = useState(alunoEditando?.numeroMatricula ?? "");
   const [nomeAluno, setNomeAluno] = useState(alunoEditando?.nomeAluno ?? "");
   const [dataNascimento, setDataNascimento] = useState(alunoEditando?.dataNascimento ?? "");
-  const [cpfAluno, setCpfAluno] = useState(alunoEditando?.cpfAluno ?? "");
-  const [telefoneAluno, setTelefoneAluno] = useState(alunoEditando?.telefoneAluno ?? "");
+  const [cpfAluno, setCpfAluno] = useState(formatarCpf(alunoEditando?.cpfAluno ?? ""));
+  const [telefoneAluno, setTelefoneAluno] = useState(formatarTelefone(alunoEditando?.telefoneAluno ?? ""));
   const [emailAluno, setEmailAluno] = useState(alunoEditando?.emailAluno ?? "");
-  const [cepAluno, setCepAluno] = useState(alunoEditando?.cepAluno ?? "");
+  const [cepAluno, setCepAluno] = useState(formatarCep(alunoEditando?.cepAluno ?? ""));
   const [enderecoAluno, setEnderecoAluno] = useState(alunoEditando?.enderecoAluno ?? "");
   const [situacao, setSituacao] = useState<SituacaoAluno>(alunoEditando?.situacao ?? "Ativo");
   const [erro, setErro] = useState<string | null>(null);
@@ -33,13 +41,26 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
     }
 
     const cpfLimpo = limparCpf(cpfAluno);
-    if (cpfAluno.trim() && cpfLimpo.length !== 11) {
-      setErro("O CPF deve ter 11 dígitos.");
+    if (cpfAluno.trim()) {
+      if (cpfLimpo.length !== 11) {
+        setErro("O CPF deve conter exatamente 11 dígitos.");
+        return;
+      }
+      if (!validarCpf(cpfLimpo)) {
+        setErro("CPF inválido. Verifique os números digitados.");
+        return;
+      }
+    }
+
+    const cepLimpo = limparCep(cepAluno);
+    if (cepAluno.trim() && cepLimpo.length !== 8) {
+      setErro("O CEP deve conter exatamente 8 dígitos.");
       return;
     }
-    const cepLimpo = cepAluno.replace(/\D/g, "");
-    if (cepAluno.trim() && cepLimpo.length !== 8) {
-      setErro("O CEP deve ter 8 dígitos.");
+
+    const telLimpo = limparTelefone(telefoneAluno);
+    if (telefoneAluno.trim() && ![10, 11].includes(telLimpo.length)) {
+      setErro("O telefone deve ter DDD + número (10 ou 11 dígitos).");
       return;
     }
 
@@ -52,7 +73,7 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
         nomeAluno: nomeAluno.trim(),
         dataNascimento,
         cpfAluno: cpfAluno.trim() ? cpfLimpo : null,
-        telefoneAluno: telefoneAluno.trim() || null,
+        telefoneAluno: telefoneAluno.trim() ? telLimpo : null,
         emailAluno: emailAluno.trim() || null,
         cepAluno: cepAluno.trim() ? cepLimpo : null,
         enderecoAluno: enderecoAluno.trim() || null,
@@ -109,9 +130,10 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <span>CPF</span>
           <input
             value={cpfAluno}
-            onChange={(evento) => setCpfAluno(evento.target.value)}
+            onChange={(evento) => setCpfAluno(formatarCpf(evento.target.value))}
+            maxLength={14}
             disabled={enviando}
-            placeholder="Opcional"
+            placeholder="000.000.000-00"
           />
         </label>
 
@@ -132,10 +154,10 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <span>Telefone</span>
           <input
             value={telefoneAluno}
-            onChange={(evento) => setTelefoneAluno(evento.target.value)}
-            maxLength={13}
+            onChange={(evento) => setTelefoneAluno(formatarTelefone(evento.target.value))}
+            maxLength={15}
             disabled={enviando}
-            placeholder="Opcional"
+            placeholder="(00) 00000-0000"
           />
         </label>
 
@@ -155,10 +177,10 @@ function FormularioAluno({ alunoEditando, salvar, cancelar }: FormularioAlunoPro
           <span>CEP</span>
           <input
             value={cepAluno}
-            onChange={(evento) => setCepAluno(evento.target.value)}
+            onChange={(evento) => setCepAluno(formatarCep(evento.target.value))}
             maxLength={9}
             disabled={enviando}
-            placeholder="Opcional"
+            placeholder="00000-000"
           />
         </label>
 

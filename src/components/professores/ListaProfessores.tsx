@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Escola, Professor, SituacaoProfessor } from "../../types";
+import { limparDigitos } from "../../utils/formatadores";
 import CardProfessor from "./CardProfessor";
 import "./ListaProfessores.css";
 
@@ -33,11 +34,14 @@ function ListaProfessores({
 
   const professoresFiltrados = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
+    const buscaNumerica = limparDigitos(busca);
 
     return professores.filter((professor) => {
-      const combinaBusca =
-        buscaNormalizada === "" || professor.nomeProf.toLowerCase().includes(buscaNormalizada);
+      const combinaNome = professor.nomeProf.toLowerCase().includes(buscaNormalizada);
+      const combinaCpf =
+        buscaNumerica !== "" && (professor.cpfProf ?? "").includes(buscaNumerica);
 
+      const combinaBusca = buscaNormalizada === "" || combinaNome || combinaCpf;
       const combinaFiltro = filtroSituacao === "todas" || professor.situacao === filtroSituacao;
 
       return combinaBusca && combinaFiltro;
@@ -78,8 +82,8 @@ function ListaProfessores({
             type="search"
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
-            placeholder="Buscar por nome..."
-            aria-label="Buscar professores por nome"
+            placeholder="Buscar por nome ou CPF..."
+            aria-label="Buscar professores por nome ou CPF"
           />
         </label>
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Responsavel } from "../../types";
-import { limparCpf } from "../../utils/formatadores";
+import { limparDigitos } from "../../utils/formatadores";
 import CardResponsavel from "./CardResponsavel";
 import "./ListaResponsaveis.css";
 
@@ -29,7 +29,7 @@ function ListaResponsaveis({
 
   const responsaveisFiltrados = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
-    const buscaSoDigitos = limparCpf(busca);
+    const buscaSoDigitos = limparDigitos(busca);
 
     if (buscaNormalizada === "") return responsaveis;
 
@@ -88,7 +88,7 @@ function ListaResponsaveis({
 
       {carregando ? (
         <p className="lista-responsaveis__estado" role="status">
-          A carregar responsáveis...
+          Carregando responsáveis...
         </p>
       ) : responsaveisFiltrados.length === 0 ? (
         <p className="lista-responsaveis__vazio-geral">

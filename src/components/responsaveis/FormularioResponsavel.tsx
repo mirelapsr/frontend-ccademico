@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Responsavel, ResponsavelEntrada } from "../../types";
-import { limparCpf } from "../../utils/formatadores";
+import {
+  formatarCep,
+  formatarCpf,
+  formatarTelefone,
+  limparCep,
+  limparCpf,
+  limparTelefone,
+  validarCpf,
+} from "../../utils/formatadores";
 import "./FormularioResponsavel.css";
 
 interface FormularioResponsavelProps {
@@ -15,10 +23,10 @@ function FormularioResponsavel({
   cancelar,
 }: FormularioResponsavelProps) {
   const [nomeResp, setNomeResp] = useState(responsavelEditando?.nomeResp ?? "");
-  const [cpfResp, setCpfResp] = useState(responsavelEditando?.cpfResp ?? "");
-  const [telefoneResp, setTelefoneResp] = useState(responsavelEditando?.telefoneResp ?? "");
+  const [cpfResp, setCpfResp] = useState(formatarCpf(responsavelEditando?.cpfResp ?? ""));
+  const [telefoneResp, setTelefoneResp] = useState(formatarTelefone(responsavelEditando?.telefoneResp ?? ""));
   const [emailResp, setEmailResp] = useState(responsavelEditando?.emailResp ?? "");
-  const [cepResp, setCepResp] = useState(responsavelEditando?.cepResp ?? "");
+  const [cepResp, setCepResp] = useState(formatarCep(responsavelEditando?.cepResp ?? ""));
   const [enderecoResp, setEnderecoResp] = useState(responsavelEditando?.enderecoResp ?? "");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -26,10 +34,10 @@ function FormularioResponsavel({
 
   useEffect(() => {
     setNomeResp(responsavelEditando?.nomeResp ?? "");
-    setCpfResp(responsavelEditando?.cpfResp ?? "");
-    setTelefoneResp(responsavelEditando?.telefoneResp ?? "");
+    setCpfResp(formatarCpf(responsavelEditando?.cpfResp ?? ""));
+    setTelefoneResp(formatarTelefone(responsavelEditando?.telefoneResp ?? ""));
     setEmailResp(responsavelEditando?.emailResp ?? "");
-    setCepResp(responsavelEditando?.cepResp ?? "");
+    setCepResp(formatarCep(responsavelEditando?.cepResp ?? ""));
     setEnderecoResp(responsavelEditando?.enderecoResp ?? "");
     setErro(null);
   }, [responsavelEditando]);
@@ -43,19 +51,29 @@ function FormularioResponsavel({
       return;
     }
 
-    const cpfDigitos = cpfResp.trim() ? limparCpf(cpfResp) : "";
-    if (cpfDigitos && cpfDigitos.length !== 11) {
-      setErro("O CPF deve ter 11 dígitos numéricos.");
-      return;
+    const cpfDigitos = limparCpf(cpfResp);
+    if (cpfResp.trim()) {
+      if (cpfDigitos.length !== 11) {
+        setErro("O CPF deve conter exatamente 11 dígitos.");
+        return;
+      }
+      if (!validarCpf(cpfDigitos)) {
+        setErro("CPF inválido. Verifique os números digitados.");
+        return;
+      }
     }
 
-    const cepDigitos = cepResp.replace(/\D/g, "");
+    const cepDigitos = limparCep(cepResp);
     if (cepResp.trim() && cepDigitos.length !== 8) {
-      setErro("O CEP deve ter 8 dígitos.");
+      setErro("O CEP deve conter exatamente 8 dígitos.");
       return;
     }
 
-    const telefoneLimpo = telefoneResp.trim() ? telefoneResp.replace(/\D/g, "") : null;
+    const telDigitos = limparTelefone(telefoneResp);
+    if (telefoneResp.trim() && ![10, 11].includes(telDigitos.length)) {
+      setErro("O telefone deve ter DDD + número (10 ou 11 dígitos).");
+      return;
+    }
 
     emEnvioRef.current = true;
     setEnviando(true);
@@ -64,8 +82,8 @@ function FormularioResponsavel({
     try {
       await salvar({
         nomeResp: nomeResp.trim(),
-        cpfResp: cpfDigitos || null,
-        telefoneResp: telefoneLimpo,
+        cpfResp: cpfResp.trim() ? cpfDigitos : null,
+        telefoneResp: telefoneResp.trim() ? telDigitos : null,
         emailResp: emailResp.trim() || null,
         cepResp: cepResp.trim() ? cepDigitos : null,
         enderecoResp: enderecoResp.trim() || null,
@@ -105,9 +123,10 @@ function FormularioResponsavel({
           <input
             value={cpfResp}
             onChange={(evento) => {
-              setCpfResp(evento.target.value);
+              setCpfResp(formatarCpf(evento.target.value));
               setErro(null);
             }}
+            maxLength={14}
             disabled={enviando}
             placeholder="000.000.000-00"
             inputMode="numeric"
@@ -119,7 +138,7 @@ function FormularioResponsavel({
           <input
             value={telefoneResp}
             onChange={(evento) => {
-              setTelefoneResp(evento.target.value);
+              setTelefoneResp(formatarTelefone(evento.target.value));
               setErro(null);
             }}
             maxLength={15}
@@ -149,7 +168,7 @@ function FormularioResponsavel({
           <input
             value={cepResp}
             onChange={(evento) => {
-              setCepResp(evento.target.value);
+              setCepResp(formatarCep(evento.target.value));
               setErro(null);
             }}
             maxLength={9}

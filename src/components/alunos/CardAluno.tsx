@@ -1,5 +1,5 @@
 import type { Aluno } from "../../types";
-import { formatarCpf } from "../../utils/formatadores";
+import { formatarCep, formatarCpf, formatarTelefone } from "../../utils/formatadores";
 import "./CardAluno.css";
 
 interface CardAlunoProps {
@@ -72,7 +72,7 @@ function CardAluno({ aluno, nomeTurma, aoEditar, aoExcluir }: CardAlunoProps) {
         <div className="card-aluno__coluna">
           <span className="card-aluno__rotulo">Contato</span>
           <p className="card-aluno__valor">
-            <ValorOuVazio valor={aluno.telefoneAluno} />
+            <ValorOuVazio valor={formatarTelefone(aluno.telefoneAluno)} />
           </p>
           <p className="card-aluno__valor">
             <ValorOuVazio valor={aluno.emailAluno} />
@@ -97,7 +97,7 @@ function CardAluno({ aluno, nomeTurma, aoEditar, aoExcluir }: CardAlunoProps) {
             <ValorOuVazio valor={aluno.enderecoAluno} />
           </p>
           <p className="card-aluno__valor">
-            CEP: <ValorOuVazio valor={aluno.cepAluno} />
+            CEP: <ValorOuVazio valor={formatarCep(aluno.cepAluno)} />
           </p>
         </div>
       </div>
@@ -132,6 +132,7 @@ function IconeTurma() {
         fill="none"
         stroke="currentColor"
         strokeWidth="1.3"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path

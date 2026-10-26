@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Aluno, SituacaoAluno } from "../../types";
+import { limparDigitos } from "../../utils/formatadores";
 import CardAluno from "./CardAluno";
 import "./ListaAlunos.css";
 
@@ -31,13 +32,16 @@ function ListaAlunos({
 
   const alunosFiltrados = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
+    const buscaNumerica = limparDigitos(busca);
 
     return alunos.filter((aluno) => {
+      const combinaNome = aluno.nomeAluno.toLowerCase().includes(buscaNormalizada);
+      const combinaMatricula = aluno.numeroMatricula.toLowerCase().includes(buscaNormalizada);
+      const combinaCpf =
+        buscaNumerica !== "" && (aluno.cpfAluno ?? "").includes(buscaNumerica);
+
       const combinaBusca =
-        buscaNormalizada === "" ||
-        aluno.nomeAluno.toLowerCase().includes(buscaNormalizada) ||
-        (aluno.cpfAluno ?? "").toLowerCase().includes(buscaNormalizada) ||
-        aluno.numeroMatricula.toLowerCase().includes(buscaNormalizada);
+        buscaNormalizada === "" || combinaNome || combinaMatricula || combinaCpf;
 
       const combinaFiltro = filtroSituacao === "todas" || aluno.situacao === filtroSituacao;
 

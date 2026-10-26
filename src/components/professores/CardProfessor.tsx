@@ -1,5 +1,5 @@
 import type { Escola, Professor } from "../../types";
-import { formatarCpf } from "../../utils/formatadores";
+import { formatarCep, formatarCpf, formatarTelefone } from "../../utils/formatadores";
 import "./CardProfessor.css";
 
 interface CardProfessorProps {
@@ -57,7 +57,7 @@ function CardProfessor({ professor, escolas, aoEditar, aoExcluir }: CardProfesso
         <div className="card-professor__coluna">
           <span className="card-professor__rotulo">Contato</span>
           <p className="card-professor__valor">
-            <ValorOuVazio valor={professor.telefoneProf} />
+            <ValorOuVazio valor={formatarTelefone(professor.telefoneProf)} />
           </p>
           <p className="card-professor__valor">
             <ValorOuVazio valor={professor.emailProf} />
@@ -77,7 +77,7 @@ function CardProfessor({ professor, escolas, aoEditar, aoExcluir }: CardProfesso
             <ValorOuVazio valor={professor.enderecoProf} />
           </p>
           <p className="card-professor__valor">
-            CEP: <ValorOuVazio valor={professor.cepProf} />
+            CEP: <ValorOuVazio valor={formatarCep(professor.cepProf)} />
           </p>
         </div>
       </div>

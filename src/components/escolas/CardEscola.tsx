@@ -1,4 +1,5 @@
 import type { Escola } from "../../types";
+import { formatarCnpj, formatarTelefone } from "../../utils/formatadores";
 import "./CardEscola.css";
 
 interface CardEscolaProps {
@@ -64,7 +65,7 @@ function CardEscola({ escola, aoEditar, aoExcluir }: CardEscolaProps) {
         <div className="card-escola__coluna">
           <span className="card-escola__rotulo">Contato</span>
           <p className="card-escola__valor">
-            <ValorOuVazio valor={escola.telefoneEscola} />
+            <ValorOuVazio valor={formatarTelefone(escola.telefoneEscola)} />
           </p>
           <p className="card-escola__valor">
             <ValorOuVazio valor={escola.emailEscola} />
@@ -75,7 +76,7 @@ function CardEscola({ escola, aoEditar, aoExcluir }: CardEscolaProps) {
           <span className="card-escola__rotulo">Identificação</span>
           <div className="card-escola__selos">
             <span className="card-escola__selo">
-              CNPJ: <ValorOuVazio valor={escola.cnpj} />
+              CNPJ: <ValorOuVazio valor={formatarCnpj(escola.cnpj)} />
             </span>
             <span className="card-escola__selo">
               INEP: <ValorOuVazio valor={escola.codigoInep} />

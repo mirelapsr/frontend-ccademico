@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import type { Escola } from "../../types";
+import { limparDigitos } from "../../utils/formatadores";
 import CardEscola from "./CardEscola";
 import "./ListaEscolas.css";
 
 interface ListaEscolasProps {
-  
   escolas: Escola[];
   aoNovaEscola: () => void;
   aoEditarEscola: (idEscola: number) => void;
@@ -16,7 +16,6 @@ interface ListaEscolasProps {
 }
 
 type FiltroRede = "todas" | "municipal" | "estadual";
-
 
 function inferirRede(escola: Escola): FiltroRede | "outra" {
   const nomeEmMinusculas = (escola.redeEnsino || escola.nomeEscola).toLowerCase();
@@ -40,13 +39,17 @@ function ListaEscolas({
 
   const escolasFiltradas = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
+    const buscaNumerica = limparDigitos(busca);
 
     return escolas.filter((escola) => {
+      const combinaNome = escola.nomeEscola.toLowerCase().includes(buscaNormalizada);
+      const combinaCnpj =
+        buscaNumerica !== "" && (escola.cnpj ?? "").includes(buscaNumerica);
+      const combinaInep =
+        buscaNumerica !== "" && (escola.codigoInep ?? "").includes(buscaNumerica);
+
       const combinaBusca =
-        buscaNormalizada === "" ||
-        escola.nomeEscola.toLowerCase().includes(buscaNormalizada) ||
-        (escola.cnpj ?? "").toLowerCase().includes(buscaNormalizada) ||
-        (escola.codigoInep ?? "").toLowerCase().includes(buscaNormalizada);
+        buscaNormalizada === "" || combinaNome || combinaCnpj || combinaInep;
 
       const combinaFiltro =
         filtroRede === "todas" || inferirRede(escola) === filtroRede;

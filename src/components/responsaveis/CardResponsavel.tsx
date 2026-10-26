@@ -1,23 +1,11 @@
 import type { Responsavel } from "../../types";
-import { formatarCpf } from "../../utils/formatadores";
+import { formatarCpf, formatarTelefone } from "../../utils/formatadores";
 import "./CardResponsavel.css";
 
 interface CardResponsavelProps {
   responsavel: Responsavel;
   aoEditar: (idResponsavel: number) => void;
   aoExcluir: (idResponsavel: number) => void;
-}
-
-function formatarTelefone(telefone: string | null | undefined): string | null {
-  if (!telefone) return null;
-  const digitos = telefone.replace(/\D/g, "");
-  if (digitos.length === 11) {
-    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
-  }
-  if (digitos.length === 10) {
-    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
-  }
-  return telefone;
 }
 
 function formatarDataHora(dataIso: string | null | undefined): string {

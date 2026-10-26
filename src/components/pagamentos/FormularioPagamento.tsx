@@ -7,6 +7,8 @@ interface FormularioPagamentoProps {
   cancelar: () => void;
 }
 
+const REGEX_COMPETENCIA = /^\d{4}-(0[1-9]|1[0-2])$/;
+
 function FormularioPagamento({ alunos, salvar, cancelar }: FormularioPagamentoProps) {
   const [numeroPagamento, setNumeroPagamento] = useState("");
   const [alunoId, setAlunoId] = useState(alunos[0]?.idAluno ?? 0);
@@ -17,12 +19,17 @@ function FormularioPagamento({ alunos, salvar, cancelar }: FormularioPagamentoPr
   const [enviando, setEnviando] = useState(false);
   const emEnvioRef = useRef(false);
 
-async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     if (emEnvioRef.current || enviando) return;
 
     if (!numeroPagamento.trim() || !alunoId || !competencia || !valor || !vencimento) {
       setErro("Todos os campos são obrigatórios.");
+      return;
+    }
+
+    if (!REGEX_COMPETENCIA.test(competencia.trim())) {
+      setErro("Competência inválida. Selecione um mês no formato AAAA-MM.");
       return;
     }
 
@@ -40,7 +47,7 @@ async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
       await salvar({
         numeroBoleto: numeroPagamento.trim(),
         alunoId: Number(alunoId),
-        competencia,
+        competencia: competencia.trim(),
         valorMensalidade: valorNumerico,
         dataVencimento: vencimento,
         situacao: "Pendente",
@@ -59,7 +66,14 @@ async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
       <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "20px" }}>
         <label style={{ display: "flex", flexDirection: "column", gap: "6px", gridColumn: "1 / -1" }}>
           <span>Aluno *</span>
-          <select value={alunoId} onChange={(e) => setAlunoId(Number(e.target.value))} disabled={enviando}>
+          <select
+            value={alunoId}
+            onChange={(e) => {
+              setAlunoId(Number(e.target.value));
+              setErro(null);
+            }}
+            disabled={enviando}
+          >
             {alunos.length === 0 && <option value={0}>Nenhum aluno cadastrado</option>}
             {alunos.map((a) => (
               <option key={a.idAluno} value={a.idAluno}>
@@ -73,7 +87,10 @@ async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
           <span>Número do Pagamento *</span>
           <input
             value={numeroPagamento}
-            onChange={(e) => setNumeroPagamento(e.target.value)}
+            onChange={(e) => {
+              setNumeroPagamento(e.target.value);
+              setErro(null);
+            }}
             placeholder="Ex: BOL-2026-0015"
             disabled={enviando}
           />
@@ -84,7 +101,10 @@ async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
           <input
             type="month"
             value={competencia}
-            onChange={(e) => setCompetencia(e.target.value)}
+            onChange={(e) => {
+              setCompetencia(e.target.value);
+              setErro(null);
+            }}
             disabled={enviando}
           />
         </label>
@@ -96,7 +116,10 @@ async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
             step="0.01"
             min="0.01"
             value={valor}
-            onChange={(e) => setValor(e.target.value)}
+            onChange={(e) => {
+              setValor(e.target.value);
+              setErro(null);
+            }}
             placeholder="0.00"
             disabled={enviando}
           />
@@ -107,7 +130,10 @@ async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
           <input
             type="date"
             value={vencimento}
-            onChange={(e) => setVencimento(e.target.value)}
+            onChange={(e) => {
+              setVencimento(e.target.value);
+              setErro(null);
+            }}
             disabled={enviando}
           />
         </label>

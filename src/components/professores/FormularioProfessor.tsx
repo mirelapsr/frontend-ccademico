@@ -1,6 +1,14 @@
 import { useRef, useState, type FormEvent } from "react";
 import type { Escola, Professor, ProfessorEntrada, SituacaoProfessor } from "../../types";
-import { limparCpf } from "../../utils/formatadores";
+import {
+  formatarCep,
+  formatarCpf,
+  formatarTelefone,
+  limparCep,
+  limparCpf,
+  limparTelefone,
+  validarCpf,
+} from "../../utils/formatadores";
 import "./FormularioProfessor.css";
 
 interface FormularioProfessorProps {
@@ -17,10 +25,10 @@ function FormularioProfessor({
   cancelar,
 }: FormularioProfessorProps) {
   const [nomeProf, setNomeProf] = useState(professorEditando?.nomeProf ?? "");
-  const [cpfProf, setCpfProf] = useState(professorEditando?.cpfProf ?? "");
-  const [telefoneProf, setTelefoneProf] = useState(professorEditando?.telefoneProf ?? "");
+  const [cpfProf, setCpfProf] = useState(formatarCpf(professorEditando?.cpfProf ?? ""));
+  const [telefoneProf, setTelefoneProf] = useState(formatarTelefone(professorEditando?.telefoneProf ?? ""));
   const [emailProf, setEmailProf] = useState(professorEditando?.emailProf ?? "");
-  const [cepProf, setCepProf] = useState(professorEditando?.cepProf ?? "");
+  const [cepProf, setCepProf] = useState(formatarCep(professorEditando?.cepProf ?? ""));
   const [enderecoProf, setEnderecoProf] = useState(professorEditando?.enderecoProf ?? "");
   const [situacao, setSituacao] = useState<SituacaoProfessor>(
     professorEditando?.situacao ?? "Ativo"
@@ -42,13 +50,26 @@ function FormularioProfessor({
     }
 
     const cpfDigitos = limparCpf(cpfProf);
-    if (cpfProf.trim() && cpfDigitos.length !== 11) {
-      setErro("O CPF deve ter 11 dígitos.");
+    if (cpfProf.trim()) {
+      if (cpfDigitos.length !== 11) {
+        setErro("O CPF deve conter exatamente 11 dígitos.");
+        return;
+      }
+      if (!validarCpf(cpfDigitos)) {
+        setErro("CPF inválido. Verifique os números digitados.");
+        return;
+      }
+    }
+
+    const cepDigitos = limparCep(cepProf);
+    if (cepProf.trim() && cepDigitos.length !== 8) {
+      setErro("O CEP deve conter exatamente 8 dígitos.");
       return;
     }
-    const cepDigitos = cepProf.replace(/\D/g, "");
-    if (cepProf.trim() && cepDigitos.length !== 8) {
-      setErro("O CEP deve ter 8 dígitos.");
+
+    const telDigitos = limparTelefone(telefoneProf);
+    if (telefoneProf.trim() && ![10, 11].includes(telDigitos.length)) {
+      setErro("O telefone deve ter DDD + número (10 ou 11 dígitos).");
       return;
     }
 
@@ -59,7 +80,7 @@ function FormularioProfessor({
       await salvar({
         nomeProf: nomeProf.trim(),
         cpfProf: cpfProf.trim() ? cpfDigitos : null,
-        telefoneProf: telefoneProf.trim() || null,
+        telefoneProf: telefoneProf.trim() ? telDigitos : null,
         emailProf: emailProf.trim() || null,
         cepProf: cepProf.trim() ? cepDigitos : null,
         enderecoProf: enderecoProf.trim() || null,
@@ -91,7 +112,10 @@ function FormularioProfessor({
           <span>Nome completo *</span>
           <input
             value={nomeProf}
-            onChange={(evento) => setNomeProf(evento.target.value)}
+            onChange={(evento) => {
+              setNomeProf(evento.target.value);
+              setErro(null);
+            }}
             maxLength={100}
             disabled={enviando}
             placeholder="Ex.: Maria da Silva Rocha"
@@ -99,12 +123,17 @@ function FormularioProfessor({
         </label>
 
         <label className="formulario-professor__campo">
-          <span>CPF *</span>
+          <span>CPF</span>
           <input
             value={cpfProf}
-            onChange={(evento) => setCpfProf(evento.target.value)}
+            onChange={(evento) => {
+              setCpfProf(formatarCpf(evento.target.value));
+              setErro(null);
+            }}
+            maxLength={14}
             disabled={enviando}
             placeholder="000.000.000-00"
+            inputMode="numeric"
           />
         </label>
 
@@ -112,10 +141,14 @@ function FormularioProfessor({
           <span>Telefone</span>
           <input
             value={telefoneProf}
-            onChange={(evento) => setTelefoneProf(evento.target.value)}
-            maxLength={13}
+            onChange={(evento) => {
+              setTelefoneProf(formatarTelefone(evento.target.value));
+              setErro(null);
+            }}
+            maxLength={15}
             disabled={enviando}
-            placeholder="86 99999-0000"
+            placeholder="(86) 99999-0000"
+            inputMode="tel"
           />
         </label>
 
@@ -124,7 +157,10 @@ function FormularioProfessor({
           <input
             type="email"
             value={emailProf}
-            onChange={(evento) => setEmailProf(evento.target.value)}
+            onChange={(evento) => {
+              setEmailProf(evento.target.value);
+              setErro(null);
+            }}
             maxLength={100}
             disabled={enviando}
             placeholder="nome@escola.edu.br"
@@ -135,10 +171,14 @@ function FormularioProfessor({
           <span>CEP</span>
           <input
             value={cepProf}
-            onChange={(evento) => setCepProf(evento.target.value)}
+            onChange={(evento) => {
+              setCepProf(formatarCep(evento.target.value));
+              setErro(null);
+            }}
             maxLength={9}
             disabled={enviando}
             placeholder="64000-000"
+            inputMode="numeric"
           />
         </label>
 
@@ -146,7 +186,10 @@ function FormularioProfessor({
           <span>Endereço</span>
           <input
             value={enderecoProf}
-            onChange={(evento) => setEnderecoProf(evento.target.value)}
+            onChange={(evento) => {
+              setEnderecoProf(evento.target.value);
+              setErro(null);
+            }}
             maxLength={200}
             disabled={enviando}
             placeholder="Rua, número — bairro, cidade/UF"
