@@ -1,0 +1,300 @@
+/* Estilos dos subcomponentes do Dashboard (filtros, cards de gráfico, tooltip, estados). */
+
+/* --- Barra de filtros --------------------------------------------------- */
+
+.filtros-dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(32, 28, 22, 0.06),
+    0 2px 8px rgba(32, 28, 22, 0.07);
+  padding: 16px 20px;
+}
+
+.filtros-dashboard__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.filtros-dashboard__campo > label,
+.filtros-dashboard__campo > span {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.filtros-dashboard select {
+  min-width: 180px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--superficie);
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--texto);
+}
+
+.filtros-dashboard__campo--turno {
+  flex: 1 1 280px;
+}
+
+.filtros-dashboard__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-turno {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.chip-turno:hover:not(:disabled) {
+  border-color: var(--azul-acao);
+}
+
+.chip-turno--ativo,
+.chip-turno--ativo:hover:not(:disabled) {
+  background: var(--azul-acao);
+  border-color: var(--azul-acao);
+  color: #ffffff;
+}
+
+.chip-turno:disabled,
+.filtros-dashboard select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.filtros-dashboard__limpar {
+  margin-left: auto;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--vinho);
+  background: transparent;
+  color: var(--vinho);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filtros-dashboard__limpar:hover:not(:disabled) {
+  background: var(--vinho);
+  color: #ffffff;
+}
+
+.filtros-dashboard__limpar:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* --- Cabeçalho e rodapé do card de gráfico ------------------------------ */
+
+.dashboard__grafico-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dashboard__grafico-sub {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+.dashboard__grafico-rodape {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+.legenda-faixas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+
+.legenda-faixas i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: -8px;
+}
+
+/* --- Alternador R$ / Qtd. ----------------------------------------------- */
+
+.alternador {
+  display: inline-flex;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.alternador__botao {
+  padding: 5px 12px;
+  border: 0;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.alternador__botao--ativo {
+  background: var(--marinho);
+  color: #ffffff;
+}
+
+/* --- Estado vazio / carregando / erro ----------------------------------- */
+
+.estado-grafico {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 220px;
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+.estado-grafico p {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 0.9rem;
+}
+
+.estado-grafico__icone {
+  width: 56px;
+  height: 56px;
+  fill: var(--borda);
+}
+
+.estado-grafico__botao {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--azul-acao);
+  background: transparent;
+  color: var(--azul-acao);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.estado-grafico__botao:hover {
+  background: var(--azul-acao);
+  color: #ffffff;
+}
+
+.estado-grafico--erro {
+  color: var(--perigo);
+}
+
+.estado-grafico__esqueleto {
+  width: 100%;
+  max-width: 280px;
+  height: 90px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #eee8db 25%, #f7f3ea 50%, #eee8db 75%);
+  background-size: 200% 100%;
+  animation: esqueleto 1.2s linear infinite;
+}
+
+@keyframes esqueleto {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .estado-grafico__esqueleto {
+    animation: none;
+  }
+}
+
+/* --- Tooltip personalizado ---------------------------------------------- */
+
+.tooltip-grafico {
+  min-width: 150px;
+  padding: 10px 12px;
+  background: rgba(14, 23, 41, 0.96);
+  color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(14, 23, 41, 0.28);
+  font-size: 0.8rem;
+}
+
+.tooltip-grafico__titulo {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--fonte-corpo);
+  font-size: 0.82rem;
+  color: #ffffff;
+}
+
+.tooltip-grafico__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tooltip-grafico__lista li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tooltip-grafico__marcador {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tooltip-grafico__nome {
+  flex: 1;
+  opacity: 0.85;
+}
+
+.tooltip-grafico__valor {
+  font-weight: 700;
+}
+
+.tooltip-grafico__rodape {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  opacity: 0.9;
+}

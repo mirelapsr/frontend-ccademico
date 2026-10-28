@@ -1,32 +1,58 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
+import { ANIMACAO_GRAFICO } from "../components/dashboard/animacao";
+import { AZUL_CLARO } from "../components/dashboard/cores";
+import CardGrafico from "../components/dashboard/CardGrafico";
+import FiltrosDashboard from "../components/dashboard/FiltrosDashboard";
+import GraficoAlunosPorSerie from "../components/dashboard/GraficoAlunosPorSerie";
+import GraficoDesempenhoMaterias from "../components/dashboard/GraficoDesempenhoMaterias";
+import GraficoSaudeFinanceira from "../components/dashboard/GraficoSaudeFinanceira";
+import TooltipGrafico from "../components/dashboard/TooltipGrafico";
 import { useLista } from "../hooks/useLista";
-import type { Aluno, Escola, Matricula, Turma, Turno } from "../types";
+import type {
+  Aluno,
+  Avaliacao,
+  Boleto,
+  Escola,
+  GradeCurricular,
+  Materia,
+  Matricula,
+  Nota,
+  Turma,
+  Turno,
+} from "../types";
+import {
+  FILTROS_PADRAO,
+  anosLetivosDisponiveis,
+  calcularAlunosPorSerie,
+  calcularDesempenhoPorMateria,
+  calcularKpis,
+  calcularOcupacaoPorTurma,
+  calcularSaudeFinanceira,
+  calcularTurmasPorTurno,
+  filtrarTurmas,
+  filtrosEstaoNoPadrao,
+  type FiltrosDashboard as Filtros,
+} from "../utils/dashboard";
+import "../components/dashboard/dashboard.css";
 import "./Dashboard.css";
-
-const RUTULOS_TURNO: Record<Turno, string> = {
-  Manha: "Manhã",
-  Tarde: "Tarde",
-  Noite: "Noite",
-  Integral: "Integral",
-};
 
 // Paleta institucional (marinho + variações) para o gráfico de pizza.
 const CORES_TURNO: Record<Turno, string> = {
   Manha: "#1e3a8a",
-  Tarde: "#2f6fed",
+  Tarde: AZUL_CLARO,
   Integral: "#16233f",
   Noite: "#6e1423",
 };
@@ -59,76 +85,68 @@ function CardKpi({ rotulo, valor, descricao }: CardKpiProps) {
 
 function Dashboard() {
   const dataHoje = useMemo(formatarDataHoje, []);
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_PADRAO);
 
+  // --- Dados brutos: carregados UMA vez; filtros nunca disparam nova requisição ---
   const { dados: escolas, carregando: carregandoEscolas, erro: erroEscolas } = useLista<Escola>("/escolas");
   const { dados: alunos, carregando: carregandoAlunos, erro: erroAlunos } = useLista<Aluno>("/alunos");
   const { dados: turmas, carregando: carregandoTurmas, erro: erroTurmas } = useLista<Turma>("/turmas");
   const { dados: matriculas, carregando: carregandoMatriculas, erro: erroMatriculas } =
     useLista<Matricula>("/matriculas");
 
-  const carregando = carregandoEscolas || carregandoAlunos || carregandoTurmas || carregandoMatriculas;
-  const erro = erroEscolas ?? erroAlunos ?? erroTurmas ?? erroMatriculas;
+  // Dados dos gráficos novos: cada um falha de forma isolada (o erro aparece só no seu card).
+  const { dados: notas, carregando: carregandoNotas, erro: erroNotas } = useLista<Nota>("/notas");
+  const { dados: avaliacoes, carregando: carregandoAvaliacoes, erro: erroAvaliacoes } =
+    useLista<Avaliacao>("/avaliacoes");
+  const { dados: grades, carregando: carregandoGrades, erro: erroGrades } =
+    useLista<GradeCurricular>("/grades");
+  const { dados: materias, carregando: carregandoMaterias, erro: erroMaterias } =
+    useLista<Materia>("/materias");
+  const { dados: boletos, carregando: carregandoBoletos, erro: erroBoletos } = useLista<Boleto>("/boletos");
 
-  // --- KPIs -----------------------------------------------------------
-  const totalEscolas = escolas.length;
+  const carregandoBase = carregandoEscolas || carregandoAlunos || carregandoTurmas || carregandoMatriculas;
+  const erroBase = erroEscolas ?? erroAlunos ?? erroTurmas ?? erroMatriculas;
 
-  const totalAlunosAtivos = useMemo(
-    () => alunos.filter((aluno) => aluno.situacao === "Ativo").length,
-    [alunos]
+  const carregandoDesempenho = carregandoNotas || carregandoAvaliacoes || carregandoGrades || carregandoMaterias;
+  const erroDesempenho = erroNotas ?? erroAvaliacoes ?? erroGrades ?? erroMaterias;
+
+  // --- Cálculos reativos aos filtros (useMemo; nenhum acesso à rede) ----------------
+  const anosDisponiveis = useMemo(() => anosLetivosDisponiveis(turmas), [turmas]);
+
+  const turmasFiltradas = useMemo(() => filtrarTurmas(turmas, filtros), [turmas, filtros]);
+
+  const kpis = useMemo(
+    () => calcularKpis({ escolas, alunos, matriculas, turmasFiltradas, filtros }),
+    [escolas, alunos, matriculas, turmasFiltradas, filtros]
   );
 
-  const totalTurmas = turmas.length;
-
-
-  const turmasComCapacidade = useMemo(
-    () => turmas.filter((turma) => typeof turma.capacidade === "number" && turma.capacidade > 0),
-    [turmas]
-  );
-
-  const taxaOcupacaoMedia = useMemo(() => {
-    const capacidadeTotal = turmasComCapacidade.reduce(
-      (soma, turma) => soma + (turma.capacidade ?? 0),
-      0
-    );
-    if (capacidadeTotal === 0) return 0;
-
-    const idsComCapacidade = new Set(turmasComCapacidade.map((turma) => turma.idTurma));
-    const matriculasAtivasComCapacidade = matriculas.filter(
-      (matricula) => matricula.situacao === "Ativa" && idsComCapacidade.has(matricula.turmaId)
-    ).length;
-
-    return (matriculasAtivasComCapacidade / capacidadeTotal) * 100;
-  }, [turmasComCapacidade, matriculas]);
-
-  // --- Gráfico principal: ocupação por turma ---------------------------
   const dadosOcupacao = useMemo(
-    () =>
-      turmasComCapacidade.map((turma) => {
-        const ocupacaoReal = matriculas.filter(
-          (matricula) =>
-            matricula.turmaId === turma.idTurma && matricula.situacao === "Ativa"
-        ).length;
-
-        return {
-          nome: turma.nomeTurma,
-          capacidade: turma.capacidade ?? 0,
-          ocupacao: ocupacaoReal,
-        };
-      }),
-    [turmasComCapacidade, matriculas]
+    () => calcularOcupacaoPorTurma(turmasFiltradas, matriculas),
+    [turmasFiltradas, matriculas]
   );
 
-  // --- Gráfico secundário: turmas por turno -----------------------------
-  const dadosPorTurno = useMemo(() => {
-    const turnos: Turno[] = ["Manha", "Tarde", "Noite", "Integral"];
-    return turnos
-      .map((turno) => ({
-        turno,
-        nome: RUTULOS_TURNO[turno],
-        quantidade: turmas.filter((turma) => turma.turno === turno).length,
-      }))
-      .filter((item) => item.quantidade > 0);
-  }, [turmas]);
+  const dadosPorTurno = useMemo(() => calcularTurmasPorTurno(turmasFiltradas), [turmasFiltradas]);
+
+  const dadosDesempenho = useMemo(
+    () => calcularDesempenhoPorMateria({ notas, avaliacoes, grades, materias, turmasFiltradas }),
+    [notas, avaliacoes, grades, materias, turmasFiltradas]
+  );
+
+  const resumoFinanceiro = useMemo(
+    () => calcularSaudeFinanceira({ boletos, matriculas, turmasFiltradas, filtros }),
+    [boletos, matriculas, turmasFiltradas, filtros]
+  );
+
+  const dadosPorSerie = useMemo(
+    () => calcularAlunosPorSerie(turmasFiltradas, matriculas),
+    [turmasFiltradas, matriculas]
+  );
+
+  const limparFiltros = () => setFiltros(FILTROS_PADRAO);
+  // O botão "Limpar filtros" nos estados vazios só faz sentido se há filtro aplicado.
+  const acaoLimpar = filtrosEstaoNoPadrao(filtros) ? undefined : limparFiltros;
+
+  const valorKpi = (valor: string) => (carregandoBase ? "—" : valor);
 
   return (
     <div className="dashboard">
@@ -137,84 +155,120 @@ function Dashboard() {
         <p className="dashboard__data">{dataHoje}</p>
       </header>
 
-      {erro && (
+      <FiltrosDashboard
+        filtros={filtros}
+        escolas={escolas}
+        anosDisponiveis={anosDisponiveis}
+        aoMudar={setFiltros}
+        desabilitado={carregandoBase}
+      />
+
+      {erroBase && (
         <p className="dashboard__erro" role="alert">
-          {erro}
+          {erroBase}
         </p>
       )}
 
-      <section className="dashboard__kpis" aria-label="Indicadores gerais">
-        <CardKpi rotulo="Total de Escolas" valor={carregando ? "—" : String(totalEscolas)} />
+      <section className="dashboard__kpis" aria-label="Indicadores gerais" aria-live="polite">
+        <CardKpi rotulo="Total de Escolas" valor={valorKpi(String(kpis.totalEscolas))} />
         <CardKpi
           rotulo="Alunos Ativos"
-          valor={carregando ? "—" : String(totalAlunosAtivos)}
-          descricao={`de ${alunos.length} cadastrados`}
+          valor={valorKpi(String(kpis.alunosAtivos))}
+          descricao={`de ${kpis.totalAlunosCadastrados} ${acaoLimpar ? "no recorte" : "cadastrados"}`}
         />
-        <CardKpi rotulo="Total de Turmas" valor={carregando ? "—" : String(totalTurmas)} />
+        <CardKpi rotulo="Total de Turmas" valor={valorKpi(String(kpis.totalTurmas))} />
         <CardKpi
           rotulo="Taxa Média de Ocupação"
-          valor={carregando ? "—" : `${taxaOcupacaoMedia.toFixed(1)}%`}
+          valor={valorKpi(`${kpis.taxaOcupacao.toFixed(1)}%`)}
           descricao="matrículas ativas / capacidade"
         />
       </section>
 
-      <section className="dashboard__graficos">
-        <div className="dashboard__grafico dashboard__grafico--principal">
-          <h2>Ocupação das Turmas</h2>
-          {dadosOcupacao.length === 0 ? (
-            <p className="dashboard__grafico-vazio">
-              {carregando ? "Carregando turmas..." : "Nenhuma turma com capacidade informada ainda."}
-            </p>
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dadosOcupacao} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
-                <XAxis
-                  dataKey="nome"
-                  tick={{ fontSize: 12, fill: "#4b5563" }}
-                  interval={0}
-                  angle={-15}
-                  textAnchor="end"
-                  height={56}
-                />
-                <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#4b5563" }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="capacidade" name="Capacidade" fill="#9ca3af" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="ocupacao" name="Ocupação Real" fill="#1e3a8a" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+      <div className="dashboard__graficos">
+        <CardGrafico
+          titulo="Ocupação das Turmas"
+          className="dashboard__grafico--principal"
+          carregando={carregandoBase}
+          vazio={dadosOcupacao.length === 0}
+          mensagemVazio="Nenhuma turma com capacidade informada para os filtros selecionados."
+          aoLimparFiltros={acaoLimpar}
+        >
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={dadosOcupacao} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5dfd2" vertical={false} />
+              <XAxis
+                dataKey="nome"
+                tick={{ fontSize: 12, fill: "#6b6558" }}
+                interval={0}
+                angle={-15}
+                textAnchor="end"
+                height={56}
+              />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#6b6558" }} />
+              <Tooltip
+                cursor={{ fill: "rgba(22, 35, 63, 0.06)" }}
+                content={<TooltipGrafico formatarValor={(v) => `${v} aluno(s)`} />}
+              />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="capacidade" name="Capacidade" fill="#b9b2a2" radius={[6, 6, 0, 0]} {...ANIMACAO_GRAFICO} />
+              <Bar dataKey="ocupacao" name="Ocupação Real" fill="#1e3a8a" radius={[6, 6, 0, 0]} {...ANIMACAO_GRAFICO} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardGrafico>
 
-        <div className="dashboard__grafico dashboard__grafico--secundario">
-          <h2>Turmas por Turno</h2>
-          {dadosPorTurno.length === 0 ? (
-            <p className="dashboard__grafico-vazio">
-              {carregando ? "Carregando turmas..." : "Nenhuma turma cadastrada ainda."}
-            </p>
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Tooltip />
-                <Legend />
-                <Pie
-                  data={dadosPorTurno}
-                  dataKey="quantidade"
-                  nameKey="nome"
-                  innerRadius={48}
-                  outerRadius={84}
-                  paddingAngle={2}
-                >
-                  {dadosPorTurno.map((entrada) => (
-                    <Cell key={entrada.turno} fill={CORES_TURNO[entrada.turno]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </section>
+        <CardGrafico
+          titulo="Turmas por Turno"
+          className="dashboard__grafico--secundario"
+          carregando={carregandoBase}
+          vazio={dadosPorTurno.length === 0}
+          mensagemVazio="Nenhuma turma para os filtros selecionados."
+          aoLimparFiltros={acaoLimpar}
+        >
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Tooltip content={<TooltipGrafico formatarValor={(v) => `${v} turma(s)`} />} />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+              <Pie
+                data={dadosPorTurno}
+                dataKey="quantidade"
+                nameKey="nome"
+                innerRadius={48}
+                outerRadius={84}
+                paddingAngle={2}
+                {...ANIMACAO_GRAFICO}
+              >
+                {dadosPorTurno.map((entrada) => (
+                  <Cell key={entrada.turno} fill={CORES_TURNO[entrada.turno]} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </CardGrafico>
+
+        <GraficoDesempenhoMaterias
+          className="dashboard__grafico--metade"
+          dados={dadosDesempenho}
+          carregando={carregandoDesempenho || carregandoBase}
+          erro={erroDesempenho}
+          aoLimparFiltros={acaoLimpar}
+        />
+
+        <GraficoAlunosPorSerie
+          className="dashboard__grafico--metade"
+          dados={dadosPorSerie}
+          carregando={carregandoBase}
+          erro={null}
+          aoLimparFiltros={acaoLimpar}
+        />
+
+        <GraficoSaudeFinanceira
+          className="dashboard__grafico--cheio"
+          resumo={resumoFinanceiro}
+          carregando={carregandoBoletos || carregandoBase}
+          erro={erroBoletos}
+          aoLimparFiltros={acaoLimpar}
+        />
+      </div>
     </div>
   );
 }
