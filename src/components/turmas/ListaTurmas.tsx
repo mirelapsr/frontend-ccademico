@@ -30,25 +30,32 @@ function ListaTurmas({
 }: ListaTurmasProps) {
   const [busca, setBusca] = useState("");
   const [filtroTurno, setFiltroTurno] = useState<FiltroTurno>("todas");
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  // Lookup O(1): evita um escolas.find() para cada turma a cada digitação na busca.
+  const nomeEscolaPorId = useMemo(
+    () => new Map(escolas.map((escola) => [escola.idEscola, escola.nomeEscola])),
+    [escolas]
+  );
 
   const turmasFiltradas = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return turmas.filter((turma) => {
-      const escolaVinculada = escolas.find((escola) => escola.idEscola === turma.escolaId);
-
       const combinaBusca =
         buscaNormalizada === "" ||
         turma.nomeTurma.toLowerCase().includes(buscaNormalizada) ||
         (turma.serie ?? "").toLowerCase().includes(buscaNormalizada) ||
         String(turma.anoLetivo).includes(buscaNormalizada) ||
-        (escolaVinculada?.nomeEscola ?? "").toLowerCase().includes(buscaNormalizada);
+        (nomeEscolaPorId.get(turma.escolaId) ?? "").toLowerCase().includes(buscaNormalizada);
 
       const combinaFiltro = filtroTurno === "todas" || turma.turno === filtroTurno;
 
-      return combinaBusca && combinaFiltro;
+      const combinaEscola = filtroEscola === "todas" || String(turma.escolaId) === filtroEscola;
+
+      return combinaBusca && combinaFiltro && combinaEscola;
     });
-  }, [turmas, escolas, busca, filtroTurno]);
+  }, [turmas, nomeEscolaPorId, busca, filtroTurno, filtroEscola]);
 
   return (
     <section className="lista-turmas">
@@ -88,6 +95,20 @@ function ListaTurmas({
             aria-label="Buscar turmas"
           />
         </label>
+
+        <select
+          className="lista-turmas__select"
+          value={filtroEscola}
+          onChange={(evento) => setFiltroEscola(evento.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
 
         <select
           className="lista-turmas__select"
