@@ -1,9 +1,10 @@
-import { useMemo } from "react";
-import type { Aluno, Frequencia, GradeCurricular, Matricula, Periodo, Turma } from "../../types";
+import { useMemo, useState } from "react";
+import type { Aluno, Escola, Frequencia, GradeCurricular, Matricula, Periodo, Turma } from "../../types";
 import { contarFaltas } from "../../utils/boletim";
 import "./VisaoTurmaBoletim.css";
 
 interface VisaoTurmaBoletimProps {
+  escolas: Escola[];
   turmas: Turma[];
   periodos: Periodo[];
   matriculas: Matricula[];
@@ -26,6 +27,7 @@ export function iniciais(nome: string): string {
 }
 
 function VisaoTurmaBoletim({
+  escolas,
   turmas,
   periodos,
   matriculas,
@@ -38,7 +40,21 @@ function VisaoTurmaBoletim({
   aoMudarPeriodo,
   aoAbrirBoletim,
 }: VisaoTurmaBoletimProps) {
-  const periodo = periodos.find((item) => item.idPeriodo === periodoId) ?? null;
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+  const [busca, setBusca] = useState("");
+
+  const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
+  const mapaAlunos = useMemo(() => new Map(alunos.map((a) => [a.idAluno, a])), [alunos]);
+  const mapaPeriodos = useMemo(() => new Map(periodos.map((p) => [p.idPeriodo, p])), [periodos]);
+  const periodo = periodoId !== null ? (mapaPeriodos.get(periodoId) ?? null) : null;
+
+  const turmasVisiveis = useMemo(
+    () =>
+      filtroEscola === "todas"
+        ? turmas
+        : turmas.filter((turma) => String(turma.escolaId) === filtroEscola),
+    [turmas, filtroEscola]
+  );
 
   const cartoes = useMemo(() => {
     if (turmaId === null) return [];
@@ -49,7 +65,7 @@ function VisaoTurmaBoletim({
     return matriculas
       .filter((matricula) => matricula.turmaId === turmaId && matricula.situacao === "Ativa")
       .flatMap((matricula) => {
-        const aluno = alunos.find((item) => item.idAluno === matricula.alunoId);
+        const aluno = mapaAlunos.get(matricula.alunoId);
         if (!aluno) return [];
         const faltas = periodo
           ? contarFaltas(frequencias, matricula.idMatricula, idsGradeDaTurma, periodo, aluno.idAluno)
@@ -57,7 +73,17 @@ function VisaoTurmaBoletim({
         return [{ matricula, aluno, faltas }];
       })
       .sort((a, b) => a.aluno.nomeAluno.localeCompare(b.aluno.nomeAluno, "pt-BR"));
-  }, [turmaId, matriculas, alunos, grades, frequencias, periodo]);
+  }, [turmaId, matriculas, mapaAlunos, grades, frequencias, periodo]);
+
+  const cartoesFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (termo === "") return cartoes;
+    return cartoes.filter(
+      ({ aluno }) =>
+        aluno.nomeAluno.toLowerCase().includes(termo) ||
+        aluno.numeroMatricula.toLowerCase().includes(termo)
+    );
+  }, [cartoes, busca]);
 
   return (
     <section className="visao-turma">
@@ -67,6 +93,28 @@ function VisaoTurmaBoletim({
 
       <div className="visao-turma__filtros">
         <label className="visao-turma__campo">
+          <span>Escola</span>
+          <select
+            value={filtroEscola}
+            onChange={(evento) => {
+              const novaEscola = evento.target.value;
+              setFiltroEscola(novaEscola);
+              const turmaAtual = turmaId !== null ? mapaTurmas.get(turmaId) : undefined;
+              if (turmaAtual && novaEscola !== "todas" && String(turmaAtual.escolaId) !== novaEscola) {
+                aoMudarTurma(null);
+              }
+            }}
+          >
+            <option value="todas">Todas as escolas</option>
+            {escolas.map((escola) => (
+              <option key={escola.idEscola} value={escola.idEscola}>
+                {escola.nomeEscola}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="visao-turma__campo">
           <span>Turma</span>
           <select
             value={turmaId ?? ""}
@@ -75,7 +123,7 @@ function VisaoTurmaBoletim({
             }
           >
             <option value="">Selecione a turma</option>
-            {turmas.map((turma) => (
+            {turmasVisiveis.map((turma) => (
               <option key={turma.idTurma} value={turma.idTurma}>
                 {turma.nomeTurma} ({turma.anoLetivo})
               </option>
@@ -99,15 +147,28 @@ function VisaoTurmaBoletim({
             ))}
           </select>
         </label>
+
+        <label className="visao-turma__campo">
+          <span>Aluno</span>
+          <input
+            type="search"
+            value={busca}
+            onChange={(evento) => setBusca(evento.target.value)}
+            placeholder="Nome ou matrícula..."
+            aria-label="Buscar aluno por nome ou matrícula"
+          />
+        </label>
       </div>
 
       {turmaId === null || periodo === null ? (
         <p className="visao-turma__vazio">Escolha uma turma e um período letivo para ver os alunos.</p>
       ) : cartoes.length === 0 ? (
         <p className="visao-turma__vazio">Nenhum aluno com matrícula ativa nesta turma.</p>
+      ) : cartoesFiltrados.length === 0 ? (
+        <p className="visao-turma__vazio">Nenhum aluno encontrado para essa busca.</p>
       ) : (
         <ul className="visao-turma__grade">
-          {cartoes.map(({ matricula, aluno, faltas }) => (
+          {cartoesFiltrados.map(({ matricula, aluno, faltas }) => (
             <li key={matricula.idMatricula} className="visao-turma__cartao">
               <div className="visao-turma__avatar" aria-hidden="true">
                 {iniciais(aluno.nomeAluno)}

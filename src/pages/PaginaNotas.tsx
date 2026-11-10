@@ -18,6 +18,7 @@ import type {
   Materia,
   Turma,
   Periodo,
+  Escola,
 } from "../types";
 
 interface EstadoLinha {
@@ -49,6 +50,7 @@ function PaginaNotas() {
   const { dados: materias } = useLista<Materia>("/materias");
   const { dados: turmas } = useLista<Turma>("/turmas");
   const { dados: periodos } = useLista<Periodo>("/periodos");
+  const { dados: escolas } = useLista<Escola>("/escolas");
 
   const [turmaSelecionada, setTurmaSelecionada] = useState<number | "">("");
   const [gradeSelecionada, setGradeSelecionada] = useState<number | "">("");
@@ -333,6 +335,7 @@ function PaginaNotas() {
 
       {avaliacaoAtivaId === null || !avaliacaoAtiva || !turmaDaAvaliacaoAtiva ? (
         <GradeAvaliacoes
+          escolas={escolas}
           turmas={turmas}
           gradesDaTurma={gradesDaTurma}
           materias={materias}

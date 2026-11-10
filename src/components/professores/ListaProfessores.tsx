@@ -31,6 +31,13 @@ function ListaProfessores({
 }: ListaProfessoresProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  // Lookup O(1) idEscola → nome (usado na busca por nome da escola).
+  const nomeEscolaPorId = useMemo(
+    () => new Map(escolas.map((escola) => [escola.idEscola, escola.nomeEscola])),
+    [escolas]
+  );
 
   const professoresFiltrados = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
@@ -41,12 +48,18 @@ function ListaProfessores({
       const combinaCpf =
         buscaNumerica !== "" && (professor.cpfProf ?? "").includes(buscaNumerica);
 
-      const combinaBusca = buscaNormalizada === "" || combinaNome || combinaCpf;
-      const combinaFiltro = filtroSituacao === "todas" || professor.situacao === filtroSituacao;
+      const combinaEscolaNome = (nomeEscolaPorId.get(professor.escolaId) ?? "")
+        .toLowerCase()
+        .includes(buscaNormalizada);
 
-      return combinaBusca && combinaFiltro;
+      const combinaBusca =
+        buscaNormalizada === "" || combinaNome || combinaCpf || combinaEscolaNome;
+      const combinaFiltro = filtroSituacao === "todas" || professor.situacao === filtroSituacao;
+      const combinaEscola = filtroEscola === "todas" || String(professor.escolaId) === filtroEscola;
+
+      return combinaBusca && combinaFiltro && combinaEscola;
     });
-  }, [professores, busca, filtroSituacao]);
+  }, [professores, nomeEscolaPorId, busca, filtroSituacao, filtroEscola]);
 
   return (
     <section className="lista-professores">
@@ -82,10 +95,24 @@ function ListaProfessores({
             type="search"
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
-            placeholder="Buscar por nome ou CPF..."
-            aria-label="Buscar professores por nome ou CPF"
+            placeholder="Buscar por nome, CPF ou escola..."
+            aria-label="Buscar professores por nome, CPF ou escola"
           />
         </label>
+
+        <select
+          className="lista-professores__select"
+          value={filtroEscola}
+          onChange={(evento) => setFiltroEscola(evento.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
 
         <select
           className="lista-professores__select"

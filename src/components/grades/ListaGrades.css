@@ -73,14 +73,15 @@
 
 .lista-grades__filtros {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   margin-bottom: 24px;
 }
 
 .lista-grades__busca {
   position: relative;
-  flex: 1 1 320px;
+  flex: 2 1 160px;
+  min-width: 120px;
   display: flex;
   align-items: center;
 }
@@ -113,8 +114,11 @@
 }
 
 .lista-grades__select {
-  flex: 0 1 200px;
-  padding: 10px 14px;
+  flex: 1 1 170px;
+  min-width: 120px;
+  max-width: 280px;
+  text-overflow: ellipsis;
+  padding: 10px 10px;
   border: 1px solid var(--borda);
   border-radius: 8px;
   background: var(--superficie);
@@ -162,7 +166,13 @@
     width: 100%;
   }
 
+  .lista-grades__filtros {
+    flex-wrap: wrap;
+  }
+
+  .lista-grades__busca,
   .lista-grades__select {
-    flex-basis: 100%;
+    flex: 1 1 100%;
+    max-width: none;
   }
 }

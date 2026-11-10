@@ -4,8 +4,8 @@
 
 .visao-turma__filtros {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-wrap: nowrap;
+  gap: 12px;
   margin-bottom: 28px;
 }
 
@@ -13,7 +13,8 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 1 1 240px;
+  flex: 1 1 170px;
+  min-width: 110px;
   max-width: 340px;
 }
 
@@ -23,8 +24,11 @@
   color: var(--texto-suave);
 }
 
-.visao-turma__campo select {
-  padding: 10px 14px;
+.visao-turma__campo select,
+.visao-turma__campo input {
+  min-width: 0;
+  text-overflow: ellipsis;
+  padding: 10px 10px;
   border: 1px solid var(--borda);
   border-radius: 8px;
   background: var(--superficie);
@@ -34,7 +38,12 @@
   cursor: pointer;
 }
 
-.visao-turma__campo select:focus-visible {
+.visao-turma__campo input {
+  cursor: text;
+}
+
+.visao-turma__campo select:focus-visible,
+.visao-turma__campo input:focus-visible {
   outline: 2px solid var(--marinho);
   outline-offset: 1px;
 }
@@ -123,4 +132,15 @@
   background: var(--superficie);
   border: 1px dashed var(--borda);
   border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+  .visao-turma__filtros {
+    flex-wrap: wrap;
+  }
+
+  .visao-turma__campo {
+    flex: 1 1 100%;
+    max-width: none;
+  }
 }

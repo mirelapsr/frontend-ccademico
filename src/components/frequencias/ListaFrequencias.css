@@ -29,14 +29,15 @@
 
 .lista-frequencias__filtros {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   margin-bottom: 24px;
 }
 
 .lista-frequencias__busca {
   position: relative;
-  flex: 1 1 320px;
+  flex: 2 1 140px;
+  min-width: 100px;
   display: flex;
   align-items: center;
 }
@@ -69,8 +70,9 @@
 }
 
 .lista-frequencias__data {
-  flex: 0 1 180px;
-  padding: 10px 14px;
+  flex: 0 1 150px;
+  min-width: 136px;
+  padding: 10px 10px;
   border: 1px solid var(--borda);
   border-radius: 8px;
   background: var(--superficie);
@@ -86,8 +88,11 @@
 }
 
 .lista-frequencias__select {
-  flex: 0 1 200px;
-  padding: 10px 14px;
+  flex: 1 1 150px;
+  min-width: 100px;
+  max-width: 280px;
+  text-overflow: ellipsis;
+  padding: 10px 10px;
   border: 1px solid var(--borda);
   border-radius: 8px;
   background: var(--superficie);
@@ -128,7 +133,14 @@
     width: 100%;
   }
 
+  .lista-frequencias__filtros {
+    flex-wrap: wrap;
+  }
+
+  .lista-frequencias__busca,
+  .lista-frequencias__data,
   .lista-frequencias__select {
-    flex-basis: 100%;
+    flex: 1 1 100%;
+    max-width: none;
   }
 }

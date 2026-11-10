@@ -24,12 +24,22 @@ function ListaMatriculas({
 }: ListaMatriculasProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
+  const [filtroTurma, setFiltroTurma] = useState("todas"); // "todas" ou o idTurma como texto
+
+  const mapaAlunos = useMemo(() => new Map(alunos.map((a) => [a.idAluno, a])), [alunos]);
+  const turmasOrdenadas = useMemo(
+    () =>
+      [...turmas].sort(
+        (a, b) => b.anoLetivo - a.anoLetivo || a.nomeTurma.localeCompare(b.nomeTurma, "pt-BR")
+      ),
+    [turmas]
+  );
 
   const matriculasFiltradas = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return matriculas.filter((matricula) => {
-      const aluno = alunos.find((item) => item.idAluno === matricula.alunoId);
+      const aluno = mapaAlunos.get(matricula.alunoId);
 
       const combinaBusca =
         buscaNormalizada === "" ||
@@ -38,9 +48,11 @@ function ListaMatriculas({
 
       const combinaFiltro = filtroSituacao === "todas" || matricula.situacao === filtroSituacao;
 
-      return combinaBusca && combinaFiltro;
+      const combinaTurma = filtroTurma === "todas" || String(matricula.turmaId) === filtroTurma;
+
+      return combinaBusca && combinaFiltro && combinaTurma;
     });
-  }, [matriculas, alunos, busca, filtroSituacao]);
+  }, [matriculas, mapaAlunos, busca, filtroSituacao, filtroTurma]);
 
   return (
     <section className="lista-matriculas">
@@ -62,6 +74,20 @@ function ListaMatriculas({
             aria-label="Buscar matrículas por aluno"
           />
         </label>
+
+        <select
+          className="lista-matriculas__select"
+          value={filtroTurma}
+          onChange={(evento) => setFiltroTurma(evento.target.value)}
+          aria-label="Filtrar por turma"
+        >
+          <option value="todas">Todas as turmas</option>
+          {turmasOrdenadas.map((turma) => (
+            <option key={turma.idTurma} value={turma.idTurma}>
+              {turma.nomeTurma} ({turma.anoLetivo})
+            </option>
+          ))}
+        </select>
 
         <select
           className="lista-matriculas__select"

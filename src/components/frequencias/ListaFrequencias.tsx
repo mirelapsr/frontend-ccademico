@@ -36,16 +36,29 @@ function ListaFrequencias({
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todos");
   const [filtroData, setFiltroData] = useState("");
+  const [filtroTurma, setFiltroTurma] = useState("todas"); // "todas" ou o idTurma como texto
+
+  const mapaAlunos = useMemo(() => new Map(alunos.map((a) => [a.idAluno, a])), [alunos]);
+  const mapaGrades = useMemo(() => new Map(grades.map((g) => [g.idGrade, g])), [grades]);
+  const mapaMaterias = useMemo(() => new Map(materias.map((m) => [m.idMateria, m])), [materias]);
+  const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
+  const turmasOrdenadas = useMemo(
+    () =>
+      [...turmas].sort(
+        (a, b) => b.anoLetivo - a.anoLetivo || a.nomeTurma.localeCompare(b.nomeTurma, "pt-BR")
+      ),
+    [turmas]
+  );
 
   const frequenciasFiltradas = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return frequencias
       .filter((frequencia) => {
-        const aluno = alunos.find((item) => item.idAluno === frequencia.alunoId);
-        const grade = grades.find((item) => item.idGrade === frequencia.gradeId);
-        const materia = grade ? materias.find((item) => item.idMateria === grade.materiaId) : undefined;
-        const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaId) : undefined;
+        const aluno = mapaAlunos.get(frequencia.alunoId);
+        const grade = mapaGrades.get(frequencia.gradeId);
+        const materia = grade ? mapaMaterias.get(grade.materiaId) : undefined;
+        const turma = grade ? mapaTurmas.get(grade.turmaId) : undefined;
 
         const combinaBusca =
           buscaNormalizada === "" ||
@@ -56,10 +69,22 @@ function ListaFrequencias({
         const combinaSituacao = filtroSituacao === "todos" || frequencia.situacao === filtroSituacao;
         const combinaData = filtroData === "" || frequencia.dataFrequencia === filtroData;
 
-        return combinaBusca && combinaSituacao && combinaData;
+        const combinaTurma = filtroTurma === "todas" || String(grade?.turmaId) === filtroTurma;
+
+        return combinaBusca && combinaSituacao && combinaData && combinaTurma;
       })
       .sort((a, b) => b.dataFrequencia.localeCompare(a.dataFrequencia));
-  }, [frequencias, alunos, grades, materias, turmas, busca, filtroSituacao, filtroData]);
+  }, [
+    frequencias,
+    mapaAlunos,
+    mapaGrades,
+    mapaMaterias,
+    mapaTurmas,
+    busca,
+    filtroSituacao,
+    filtroData,
+    filtroTurma,
+  ]);
 
   return (
     <section className="lista-frequencias">
@@ -81,6 +106,20 @@ function ListaFrequencias({
             aria-label="Buscar frequências"
           />
         </label>
+
+        <select
+          className="lista-frequencias__select"
+          value={filtroTurma}
+          onChange={(evento) => setFiltroTurma(evento.target.value)}
+          aria-label="Filtrar por turma"
+        >
+          <option value="todas">Todas as turmas</option>
+          {turmasOrdenadas.map((turma) => (
+            <option key={turma.idTurma} value={turma.idTurma}>
+              {turma.nomeTurma} ({turma.anoLetivo})
+            </option>
+          ))}
+        </select>
 
         <input
           type="date"

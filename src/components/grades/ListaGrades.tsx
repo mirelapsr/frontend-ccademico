@@ -32,8 +32,22 @@ function ListaGrades({
 }: ListaGradesProps) {
   const [busca, setBusca] = useState("");
   const [filtroAno, setFiltroAno] = useState<"todos" | number>("todos");
+  const [filtroTurma, setFiltroTurma] = useState("todas"); // "todas" ou o idTurma como texto
 
   const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
+  const mapaMaterias = useMemo(() => new Map(materias.map((m) => [m.idMateria, m])), [materias]);
+  const mapaProfessores = useMemo(
+    () => new Map(professores.map((p) => [p.idProfessor, p])),
+    [professores]
+  );
+
+  const turmasOrdenadas = useMemo(
+    () =>
+      [...turmas].sort(
+        (a, b) => b.anoLetivo - a.anoLetivo || a.nomeTurma.localeCompare(b.nomeTurma, "pt-BR")
+      ),
+    [turmas]
+  );
 
   const anosDisponiveis = useMemo(() => {
     const anos = grades
@@ -47,8 +61,8 @@ function ListaGrades({
 
     return grades.filter((grade) => {
       const turma = mapaTurmas.get(grade.turmaId);
-      const materia = materias.find((item) => item.idMateria === grade.materiaId);
-      const professor = professores.find((item) => item.idProfessor === grade.professorId);
+      const materia = mapaMaterias.get(grade.materiaId);
+      const professor = mapaProfessores.get(grade.professorId);
 
       const combinaBusca =
         buscaNormalizada === "" ||
@@ -58,9 +72,11 @@ function ListaGrades({
 
       const combinaFiltro = filtroAno === "todos" || turma?.anoLetivo === filtroAno;
 
-      return combinaBusca && combinaFiltro;
+      const combinaTurma = filtroTurma === "todas" || String(grade.turmaId) === filtroTurma;
+
+      return combinaBusca && combinaFiltro && combinaTurma;
     });
-  }, [grades, mapaTurmas, materias, professores, busca, filtroAno]);
+  }, [grades, mapaTurmas, mapaMaterias, mapaProfessores, busca, filtroAno, filtroTurma]);
 
   return (
     <section className="lista-grades">
@@ -101,6 +117,20 @@ function ListaGrades({
             aria-label="Buscar grades curriculares"
           />
         </label>
+
+        <select
+          className="lista-grades__select"
+          value={filtroTurma}
+          onChange={(evento) => setFiltroTurma(evento.target.value)}
+          aria-label="Filtrar por turma"
+        >
+          <option value="todas">Todas as turmas</option>
+          {turmasOrdenadas.map((turma) => (
+            <option key={turma.idTurma} value={turma.idTurma}>
+              {turma.nomeTurma} ({turma.anoLetivo})
+            </option>
+          ))}
+        </select>
 
         <select
           className="lista-grades__select"

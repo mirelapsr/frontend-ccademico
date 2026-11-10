@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Aluno, SituacaoAluno } from "../../types";
+import type { Aluno, SituacaoAluno, Turma } from "../../types";
 import { limparDigitos } from "../../utils/formatadores";
 import CardAluno from "./CardAluno";
 import "./ListaAlunos.css";
@@ -7,6 +7,9 @@ import "./ListaAlunos.css";
 interface ListaAlunosProps {
   alunos: Aluno[];
   nomeTurmaPorAluno: Record<number, string | undefined>;
+  turmas: Turma[];
+  /** idTurma da matrícula ativa de cada aluno (O(1) por idAluno). */
+  turmaIdPorAluno: Record<number, number | undefined>;
   aoNovoAluno: () => void;
   aoEditarAluno: (idAluno: number) => void;
   aoExcluirAluno: (idAluno: number) => void;
@@ -20,6 +23,8 @@ type FiltroSituacao = "todas" | SituacaoAluno;
 function ListaAlunos({
   alunos,
   nomeTurmaPorAluno,
+  turmas,
+  turmaIdPorAluno,
   aoNovoAluno,
   aoEditarAluno,
   aoExcluirAluno,
@@ -29,6 +34,15 @@ function ListaAlunos({
 }: ListaAlunosProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
+  const [filtroTurma, setFiltroTurma] = useState("todas"); // "todas" | "sem-turma" | idTurma como texto
+
+  const turmasOrdenadas = useMemo(
+    () =>
+      [...turmas].sort(
+        (a, b) => b.anoLetivo - a.anoLetivo || a.nomeTurma.localeCompare(b.nomeTurma, "pt-BR")
+      ),
+    [turmas]
+  );
 
   const alunosFiltrados = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
@@ -45,9 +59,16 @@ function ListaAlunos({
 
       const combinaFiltro = filtroSituacao === "todas" || aluno.situacao === filtroSituacao;
 
-      return combinaBusca && combinaFiltro;
+      const turmaDoAluno = turmaIdPorAluno[aluno.idAluno];
+      const combinaTurma =
+        filtroTurma === "todas" ||
+        (filtroTurma === "sem-turma"
+          ? turmaDoAluno === undefined
+          : String(turmaDoAluno) === filtroTurma);
+
+      return combinaBusca && combinaFiltro && combinaTurma;
     });
-  }, [alunos, busca, filtroSituacao]);
+  }, [alunos, turmaIdPorAluno, busca, filtroSituacao, filtroTurma]);
 
   return (
     <section className="lista-alunos">
@@ -80,6 +101,21 @@ function ListaAlunos({
             aria-label="Buscar alunos"
           />
         </label>
+
+        <select
+          className="lista-alunos__select"
+          value={filtroTurma}
+          onChange={(evento) => setFiltroTurma(evento.target.value)}
+          aria-label="Filtrar por turma"
+        >
+          <option value="todas">Todas as turmas</option>
+          <option value="sem-turma">Sem turma ativa</option>
+          {turmasOrdenadas.map((turma) => (
+            <option key={turma.idTurma} value={turma.idTurma}>
+              {turma.nomeTurma} ({turma.anoLetivo})
+            </option>
+          ))}
+        </select>
 
         <select
           className="lista-alunos__select"

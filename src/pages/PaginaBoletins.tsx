@@ -11,6 +11,7 @@ import {
 import type {
   Aluno,
   Avaliacao,
+  Escola,
   Frequencia,
   GradeCurricular,
   Materia,
@@ -26,6 +27,7 @@ function PaginaBoletins() {
   const { dados: alunos, carregando: carregandoAlunos } = useLista<Aluno>("/alunos");
   const { dados: turmas, carregando: carregandoTurmas } = useLista<Turma>("/turmas");
   const { dados: periodos, carregando: carregandoPeriodos } = useLista<Periodo>("/periodos");
+  const { dados: escolas } = useLista<Escola>("/escolas");
   const { dados: materias, carregando: carregandoMaterias } = useLista<Materia>("/materias");
   const { dados: grades, carregando: carregandoGrades } = useLista<GradeCurricular>("/grades");
   const { dados: avaliacoes, carregando: carregandoAvaliacoes } = useLista<Avaliacao>("/avaliacoes");
@@ -135,6 +137,7 @@ function PaginaBoletins() {
         />
       ) : (
         <VisaoTurmaBoletim
+          escolas={escolas}
           turmas={turmas}
           periodos={periodos}
           matriculas={matriculas}

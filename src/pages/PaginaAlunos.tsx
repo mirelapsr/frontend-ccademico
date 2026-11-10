@@ -38,19 +38,19 @@ function PaginaAlunos() {
 
   // Join no frontend: para cada aluno, acha a matrícula ativa e, a partir
   // dela, a turma correspondente. Resultado indexado por idAluno.
-  const nomeTurmaPorAluno = useMemo(() => {
-    const mapa: Record<number, string | undefined> = {};
-    for (const aluno of alunos) {
-      const matriculaAtiva = matriculas.find(
-        (matricula) => matricula.alunoId === aluno.idAluno && matricula.situacao === "Ativa"
-      );
-      const turma = matriculaAtiva
-        ? turmas.find((item) => item.idTurma === matriculaAtiva.turmaId)
-        : undefined;
-      mapa[aluno.idAluno] = turma ? `${turma.nomeTurma} (${turma.turno})` : undefined;
+  const { nomeTurmaPorAluno, turmaIdPorAluno } = useMemo(() => {
+    const turmaPorId = new Map(turmas.map((turma) => [turma.idTurma, turma]));
+    const nomes: Record<number, string | undefined> = {};
+    const ids: Record<number, number | undefined> = {};
+    for (const matricula of matriculas) {
+      if (matricula.situacao !== "Ativa") continue;
+      const turma = turmaPorId.get(matricula.turmaId);
+      if (!turma) continue;
+      nomes[matricula.alunoId] = `${turma.nomeTurma} (${turma.turno})`;
+      ids[matricula.alunoId] = turma.idTurma;
     }
-    return mapa;
-  }, [alunos, matriculas, turmas]);
+    return { nomeTurmaPorAluno: nomes, turmaIdPorAluno: ids };
+  }, [matriculas, turmas]);
 
   function abrirNovoAluno() {
     setAlunoEmEdicao(null);
@@ -124,6 +124,8 @@ function PaginaAlunos() {
         <ListaAlunos
           alunos={alunos}
           nomeTurmaPorAluno={nomeTurmaPorAluno}
+          turmas={turmas}
+          turmaIdPorAluno={turmaIdPorAluno}
           carregando={carregando}
           erro={erro ?? erroMatriculas ?? erroTurmas}
           aoRecarregar={() => void recarregarTudo()}

@@ -1,5 +1,6 @@
-import type { Avaliacao, GradeCurricular, Materia, Periodo, Turma } from "../../types";
-import CardAvaliacaoResumo from "./CardAvaliacaoResumo";
+import { useMemo, useState } from "react";
+import type { Avaliacao, Escola, GradeCurricular, Materia, Periodo, Turma } from "../../types";
+import CardAvaliacaoResumo from "../avaliacoes/CardAvaliacaoResumo";
 import "./GradeAvaliacoes.css";
 
 export interface ItemAvaliacaoResumo {
@@ -10,7 +11,8 @@ export interface ItemAvaliacaoResumo {
   totalAlunos: number;
 }
 
-interface GradeAvaliacoesProps {
+export interface GradeAvaliacoesProps {
+  escolas: Escola[];
   turmas: Turma[];
   gradesDaTurma: GradeCurricular[];
   materias: Materia[];
@@ -25,17 +27,8 @@ interface GradeAvaliacoesProps {
   aoLancarNotas: (idAvaliacao: number) => void;
 }
 
-function nomeMateriaPorGrade(
-  gradesDaTurma: GradeCurricular[],
-  materias: Materia[],
-  idGrade: number
-): string {
-  const grade = gradesDaTurma.find((item) => item.idGrade === idGrade);
-  if (!grade) return "Matéria";
-  return materias.find((materia) => materia.idMateria === grade.materiaId)?.nomeMateria ?? "Matéria";
-}
-
 function GradeAvaliacoes({
+  escolas,
   turmas,
   gradesDaTurma,
   materias,
@@ -49,6 +42,26 @@ function GradeAvaliacoes({
   itens,
   aoLancarNotas,
 }: GradeAvaliacoesProps) {
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
+  const mapaMaterias = useMemo(() => new Map(materias.map((m) => [m.idMateria, m])), [materias]);
+  const turmasVisiveis = useMemo(
+    () =>
+      filtroEscola === "todas"
+        ? turmas
+        : turmas.filter((turma) => String(turma.escolaId) === filtroEscola),
+    [turmas, filtroEscola]
+  );
+
+  function mudarEscola(novaEscola: string) {
+    setFiltroEscola(novaEscola);
+    const turmaAtual = turmaSelecionada === "" ? undefined : mapaTurmas.get(turmaSelecionada);
+    if (turmaAtual && novaEscola !== "todas" && String(turmaAtual.escolaId) !== novaEscola) {
+      aoMudarTurma("");
+    }
+  }
+
   return (
     <section className="grade-avaliacoes">
       <header className="grade-avaliacoes__cabecalho">
@@ -56,6 +69,18 @@ function GradeAvaliacoes({
       </header>
 
       <div className="grade-avaliacoes__filtros">
+        <label className="grade-avaliacoes__campo">
+          <span>Escola</span>
+          <select value={filtroEscola} onChange={(evento) => mudarEscola(evento.target.value)}>
+            <option value="todas">Todas as escolas</option>
+            {escolas.map((escola) => (
+              <option key={escola.idEscola} value={escola.idEscola}>
+                {escola.nomeEscola}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label className="grade-avaliacoes__campo">
           <span>Turma *</span>
           <select
@@ -65,7 +90,7 @@ function GradeAvaliacoes({
             }
           >
             <option value="">Selecione a turma...</option>
-            {turmas.map((turma) => (
+            {turmasVisiveis.map((turma) => (
               <option key={turma.idTurma} value={turma.idTurma}>
                 {turma.nomeTurma}
               </option>
@@ -87,7 +112,7 @@ function GradeAvaliacoes({
             </option>
             {gradesDaTurma.map((grade) => (
               <option key={grade.idGrade} value={grade.idGrade}>
-                {nomeMateriaPorGrade(gradesDaTurma, materias, grade.idGrade)}
+                {mapaMaterias.get(grade.materiaId)?.nomeMateria ?? "Matéria"}
               </option>
             ))}
           </select>
