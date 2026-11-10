@@ -15,11 +15,9 @@ function formatarData(iso: string | null | undefined): string {
   return new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("pt-BR");
 }
 
-function formatarPeso(peso: number | string | null | undefined): string {
+function formatarPeso(peso: number | null | undefined): string {
   if (peso === null || peso === undefined) return "1,00";
-  const num = typeof peso === "string" ? Number(peso) : peso;
-  if (Number.isNaN(num)) return "1,00";
-  return num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return peso.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatarMedia(media: number | null): string {
@@ -69,7 +67,7 @@ function CardAvaliacaoResumo({
 
         <div className="card-avaliacao-resumo__coluna">
           <span className="card-avaliacao-resumo__rotulo">Peso</span>
-          <p className="card-avaliacao-resumo__valor">{formatarPeso(avaliacao.peso)}</p>
+          <p className="card-avaliacao-resumo__valor">{formatarPeso(Number(avaliacao.peso))}</p>
         </div>
 
         <div className="card-avaliacao-resumo__coluna">

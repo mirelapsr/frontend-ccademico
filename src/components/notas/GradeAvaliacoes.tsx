@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Avaliacao, Escola, GradeCurricular, Materia, Periodo, Turma } from "../../types";
-import CardAvaliacaoResumo from "../avaliacoes/CardAvaliacaoResumo";
+import CardAvaliacaoResumo from "./CardAvaliacaoResumo";
 import "./GradeAvaliacoes.css";
 
 export interface ItemAvaliacaoResumo {
