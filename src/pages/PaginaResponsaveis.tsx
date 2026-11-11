@@ -11,10 +11,48 @@ import {
   listarResponsaveis,
   mensagemDeErroResponsavel,
 } from "../services/responsavelService";
-import type { Responsavel, ResponsavelEntrada } from "../types";
+import { listarResponsaveisDoAluno } from "../services/vinculoService";
+import { useLista } from "../hooks/useLista";
+import type {
+  AlunoResponsavel,
+  Escola,
+  Matricula,
+  Responsavel,
+  ResponsavelEntrada,
+  Turma,
+} from "../types";
 
 function PaginaResponsaveis() {
   const [responsaveis, setResponsaveis] = useState<Responsavel[]>([]);
+
+  // Dados do filtro de escola (carregados em paralelo; não bloqueiam a listagem).
+  const { dados: escolas } = useLista<Escola>("/escolas");
+  const { dados: matriculas } = useLista<Matricula>("/matriculas");
+  const { dados: turmas } = useLista<Turma>("/turmas");
+  const [vinculos, setVinculos] = useState<AlunoResponsavel[]>([]);
+
+  // Não há endpoint global de vínculos: busca só dos alunos com matrícula ativa,
+  // que são os únicos com escola resolvível.
+  useEffect(() => {
+    const idsAlunos = Array.from(
+      new Set(matriculas.filter((m) => m.situacao === "Ativa").map((m) => m.alunoId))
+    );
+    if (idsAlunos.length === 0) {
+      setVinculos([]);
+      return;
+    }
+    let cancelado = false;
+    void Promise.all(
+      idsAlunos.map((idAluno) =>
+        listarResponsaveisDoAluno(idAluno).catch(() => [] as AlunoResponsavel[])
+      )
+    ).then((resultados) => {
+      if (!cancelado) setVinculos(resultados.flat());
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [matriculas]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -117,6 +155,10 @@ function PaginaResponsaveis() {
       {!modalAberto ? (
         <ListaResponsaveis
           responsaveis={responsaveis}
+          escolas={escolas}
+          vinculos={vinculos}
+          matriculas={matriculas}
+          turmas={turmas}
           carregando={carregando}
           erro={erro}
           aoDispensarErro={() => setErro(null)}

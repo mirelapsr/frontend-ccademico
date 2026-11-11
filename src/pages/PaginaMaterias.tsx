@@ -12,10 +12,14 @@ import {
   mensagemDeErroMateria,
   type CriarMateriaDTO,
 } from "../services/materiaService";
-import type { Materia } from "../types";
+import { useLista } from "../hooks/useLista";
+import type { Escola, GradeCurricular, Materia, Turma } from "../types";
 
 function PaginaMaterias() {
   const [materias, setMaterias] = useState<Materia[]>([]);
+  const { dados: escolas } = useLista<Escola>("/escolas");
+  const { dados: grades } = useLista<GradeCurricular>("/grades");
+  const { dados: turmas } = useLista<Turma>("/turmas");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -124,6 +128,9 @@ function PaginaMaterias() {
       {!modalAberto ? (
         <ListaMaterias
           materias={materias}
+          escolas={escolas}
+          grades={grades}
+          turmas={turmas}
           carregando={carregando}
           erro={erro}
           aoDispensarErro={() => setErro(null)}

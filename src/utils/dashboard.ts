@@ -8,6 +8,7 @@
  *   Turma (escolaId, anoLetivo, turno, serie)
  *     ├─ Matricula (turmaId → alunoId)  ── Aluno ── Boleto (alunoId)
  *     └─ GradeCurricular (turmaId, materiaId) ── Avaliacao (gradeId) ── Nota (avaliacaoId)
+ *                                             └─ Frequencia (gradeId)
  */
 import type {
   Aluno,
@@ -15,6 +16,7 @@ import type {
   Boleto,
   Decimal,
   Escola,
+  Frequencia,
   GradeCurricular,
   Materia,
   Matricula,
@@ -396,6 +398,134 @@ export function calcularAlunosPorSerie(
   return [...contagem.entries()]
     .map(([serie, alunos]) => ({ serie, alunos }))
     .sort((a, b) => a.serie.localeCompare(b.serie, "pt-BR", { numeric: true }));
+}
+
+// ---------------------------------------------------------------------------
+// Novo: assiduidade (presenças × faltas por turma)
+// ---------------------------------------------------------------------------
+
+export interface PontoAssiduidade {
+  idTurma: number;
+  turma: string;
+  presencas: number;
+  faltasJustificadas: number;
+  faltas: number;
+  total: number;
+  /** % de presenças sobre o total de registros de chamada (0–100). */
+  taxaAssiduidade: number;
+}
+
+export interface ResumoAssiduidade {
+  /** Ordenada da menor para a maior assiduidade (turmas críticas primeiro). */
+  serie: PontoAssiduidade[];
+  totalRegistros: number;
+  /** % geral de presenças no recorte (0–100). */
+  taxaGeral: number;
+}
+
+interface EntradaAssiduidade {
+  frequencias: readonly Frequencia[];
+  grades: readonly GradeCurricular[];
+  turmasFiltradas: readonly Turma[];
+  /** Usada só para desambiguar turmas homônimas no rótulo. */
+  escolas: readonly Escola[];
+}
+
+/**
+ * Rótulo único por turma: mantém só o nome quando ele não se repete no recorte;
+ * senão acrescenta a escola e, se ainda empatar (mesma escola), o ano letivo.
+ */
+function rotulosUnicosDeTurma(
+  turmas: readonly Turma[],
+  escolas: readonly Escola[]
+): Map<number, string> {
+  const nomeEscola = new Map(escolas.map((e) => [e.idEscola, e.nomeEscola]));
+  const contar = (rotulos: Iterable<string>) => {
+    const contagem = new Map<string, number>();
+    for (const r of rotulos) contagem.set(r, (contagem.get(r) ?? 0) + 1);
+    return contagem;
+  };
+
+  const porNome = contar(turmas.map((t) => t.nomeTurma));
+  const comEscola = new Map(
+    turmas.map((t) => [
+      t.idTurma,
+      (porNome.get(t.nomeTurma) ?? 0) > 1
+        ? `${t.nomeTurma} - ${nomeEscola.get(t.escolaId) ?? `Escola #${t.escolaId}`}`
+        : t.nomeTurma,
+    ])
+  );
+
+  const porRotulo = contar(comEscola.values());
+  return new Map(
+    turmas.map((t) => {
+      const rotulo = comEscola.get(t.idTurma) ?? t.nomeTurma;
+      return [t.idTurma, (porRotulo.get(rotulo) ?? 0) > 1 ? `${rotulo} (${t.anoLetivo})` : rotulo];
+    })
+  );
+}
+
+/**
+ * Agrega os registros de chamada por turma (frequência → grade → turma).
+ * O recorte de escola/ano/turno vem de `turmasFiltradas`. Falta justificada
+ * é contada à parte, mas não entra como presença na taxa de assiduidade.
+ */
+export function calcularAssiduidadePorTurma({
+  frequencias,
+  grades,
+  turmasFiltradas,
+  escolas,
+}: EntradaAssiduidade): ResumoAssiduidade {
+  const turmaPorId = new Map(turmasFiltradas.map((t) => [t.idTurma, t]));
+  const turmaDaGrade = new Map(grades.map((g) => [g.idGrade, g.turmaId]));
+  const rotuloTurma = rotulosUnicosDeTurma(turmasFiltradas, escolas);
+
+  const porTurma = new Map<number, PontoAssiduidade>();
+  let totalPresencas = 0;
+  let totalRegistros = 0;
+
+  for (const frequencia of frequencias) {
+    const turmaId = turmaDaGrade.get(frequencia.gradeId);
+    const turma = turmaId === undefined ? undefined : turmaPorId.get(turmaId);
+    if (!turma) continue;
+
+    const ponto =
+      porTurma.get(turma.idTurma) ??
+      ({
+        idTurma: turma.idTurma,
+        turma: rotuloTurma.get(turma.idTurma) ?? turma.nomeTurma,
+        presencas: 0,
+        faltasJustificadas: 0,
+        faltas: 0,
+        total: 0,
+        taxaAssiduidade: 0,
+      } satisfies PontoAssiduidade);
+
+    if (frequencia.situacao === "Presente") {
+      ponto.presencas += 1;
+      totalPresencas += 1;
+    } else if (frequencia.situacao === "FaltaJustificada") {
+      ponto.faltasJustificadas += 1;
+    } else {
+      ponto.faltas += 1;
+    }
+    ponto.total += 1;
+    totalRegistros += 1;
+    porTurma.set(turma.idTurma, ponto);
+  }
+
+  const serie = [...porTurma.values()]
+    .map((p) => ({ ...p, taxaAssiduidade: (p.presencas / p.total) * 100 }))
+    .sort(
+      (a, b) =>
+        a.taxaAssiduidade - b.taxaAssiduidade || a.turma.localeCompare(b.turma, "pt-BR")
+    );
+
+  return {
+    serie,
+    totalRegistros,
+    taxaGeral: totalRegistros === 0 ? 0 : (totalPresencas / totalRegistros) * 100,
+  };
 }
 
 // ---------------------------------------------------------------------------

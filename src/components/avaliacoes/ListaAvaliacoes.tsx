@@ -1,10 +1,19 @@
 import { useMemo, useState } from "react";
-import type { Avaliacao, TipoAvaliacao, GradeCurricular, Materia, Turma, Periodo } from "../../types";
+import type {
+  Avaliacao,
+  Escola,
+  TipoAvaliacao,
+  GradeCurricular,
+  Materia,
+  Turma,
+  Periodo,
+} from "../../types";
 import CardAvaliacao from "./CardAvaliacao";
 import "./ListaAvaliacoes.css";
 
 interface ListaAvaliacoesProps {
   avaliacoes: Avaliacao[];
+  escolas: Escola[];
   grades: GradeCurricular[];
   materias: Materia[];
   turmas: Turma[];
@@ -18,6 +27,7 @@ type FiltroTipo = "todos" | TipoAvaliacao;
 
 function ListaAvaliacoes({
   avaliacoes,
+  escolas,
   grades,
   materias,
   turmas,
@@ -28,14 +38,20 @@ function ListaAvaliacoes({
 }: ListaAvaliacoesProps) {
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  // Lookups O(1): avaliação → grade → turma (→ escola) / matéria.
+  const mapaGrades = useMemo(() => new Map(grades.map((g) => [g.idGrade, g])), [grades]);
+  const mapaMaterias = useMemo(() => new Map(materias.map((m) => [m.idMateria, m])), [materias]);
+  const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
 
   const avaliacoesFiltradas = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
 
     return avaliacoes.filter((avaliacao) => {
-      const grade = grades.find((item) => item.idGrade === avaliacao.gradeId);
-      const materia = grade ? materias.find((item) => item.idMateria === grade.materiaId) : undefined;
-      const turma = grade ? turmas.find((item) => item.idTurma === grade.turmaId) : undefined;
+      const grade = mapaGrades.get(avaliacao.gradeId);
+      const materia = grade ? mapaMaterias.get(grade.materiaId) : undefined;
+      const turma = grade ? mapaTurmas.get(grade.turmaId) : undefined;
 
       const combinaBusca =
         buscaNormalizada === "" ||
@@ -45,9 +61,11 @@ function ListaAvaliacoes({
 
       const combinaFiltro = filtroTipo === "todos" || avaliacao.tipo === filtroTipo;
 
-      return combinaBusca && combinaFiltro;
+      const combinaEscola = filtroEscola === "todas" || String(turma?.escolaId) === filtroEscola;
+
+      return combinaBusca && combinaFiltro && combinaEscola;
     });
-  }, [avaliacoes, grades, materias, turmas, busca, filtroTipo]);
+  }, [avaliacoes, mapaGrades, mapaMaterias, mapaTurmas, busca, filtroTipo, filtroEscola]);
 
   return (
     <section className="lista-avaliacoes">
@@ -69,6 +87,20 @@ function ListaAvaliacoes({
             aria-label="Buscar avaliações"
           />
         </label>
+
+        <select
+          className="lista-avaliacoes__select"
+          value={filtroEscola}
+          onChange={(evento) => setFiltroEscola(evento.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
 
         <select
           className="lista-avaliacoes__select"

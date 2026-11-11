@@ -11,7 +11,7 @@ import {
   excluirMatricula,
   mensagemDeErroMatricula,
 } from "../services/matriculaService";
-import type { Aluno, Matricula, MatriculaEntrada, Turma } from "../types";
+import type { Aluno, Escola, Matricula, MatriculaEntrada, Turma } from "../types";
 
 type Tela = "lista" | "formulario";
 
@@ -27,6 +27,7 @@ function PaginaMatriculas() {
   } = useLista<Matricula>("/matriculas");
   const { dados: alunos } = useLista<Aluno>("/alunos");
   const { dados: turmas } = useLista<Turma>("/turmas");
+  const { dados: escolas } = useLista<Escola>("/escolas");
 
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [matriculaEmEdicao, setMatriculaEmEdicao] = useState<Matricula | null>(null);
@@ -122,6 +123,7 @@ function PaginaMatriculas() {
         <ListaMatriculas
           matriculas={matriculas}
           alunos={alunos}
+          escolas={escolas}
           turmas={turmas}
           aoNovaMatricula={abrirNovaMatricula}
           aoEditarMatricula={abrirEdicaoMatricula}

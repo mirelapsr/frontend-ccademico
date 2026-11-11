@@ -14,11 +14,20 @@ import {
   listarGrades,
   mensagemDeErroGrade,
 } from "../services/gradeService";
-import type { GradeCurricular, GradeCurricularEntrada, Materia, Professor, Turma } from "../types";
+import { useLista } from "../hooks/useLista";
+import type {
+  Escola,
+  GradeCurricular,
+  GradeCurricularEntrada,
+  Materia,
+  Professor,
+  Turma,
+} from "../types";
 
 function PaginaGrades() {
   const [grades, setGrades] = useState<GradeCurricular[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
+  const { dados: escolas } = useLista<Escola>("/escolas");
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [professores, setProfessores] = useState<Professor[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -143,6 +152,7 @@ function PaginaGrades() {
       {!modalAberto ? (
         <ListaGrades
           grades={grades}
+          escolas={escolas}
           turmas={turmas}
           materias={materias}
           professores={professores}

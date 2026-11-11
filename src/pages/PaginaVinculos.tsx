@@ -10,7 +10,15 @@ import {
   listarResponsaveisDoAluno,
   mensagemDeErroVinculo,
 } from "../services/vinculoService";
-import type { Aluno, Responsavel, AlunoResponsavel, AlunoResponsavelEntrada } from "../types";
+import type {
+  Aluno,
+  Responsavel,
+  AlunoResponsavel,
+  AlunoResponsavelEntrada,
+  Escola,
+  Matricula,
+  Turma,
+} from "../types";
 
 type Tela = "lista" | "formulario";
 
@@ -29,6 +37,9 @@ interface VinculoParaExcluir {
 function PaginaVinculos() {
   const { dados: alunos, carregando: carregandoAlunos } = useLista<Aluno>("/alunos");
   const { dados: responsaveis, carregando: carregandoResponsaveis } = useLista<Responsavel>("/responsaveis");
+  const { dados: escolas } = useLista<Escola>("/escolas");
+  const { dados: matriculas } = useLista<Matricula>("/matriculas");
+  const { dados: turmas } = useLista<Turma>("/turmas");
 
   const [vinculos, setVinculos] = useState<AlunoResponsavel[]>([]);
   const [carregandoVinculos, setCarregandoVinculos] = useState(false);
@@ -144,6 +155,9 @@ function PaginaVinculos() {
           vinculos={vinculos}
           alunos={alunos}
           responsaveis={responsaveis}
+          escolas={escolas}
+          matriculas={matriculas}
+          turmas={turmas}
           aoNovoVinculo={abrirNovoVinculo}
           aoExcluirVinculo={pedirConfirmacaoExclusao}
         />

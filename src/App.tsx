@@ -4,7 +4,7 @@ import RotaProtegida from "./components/rotas/RotaProtegida";
 import LayoutPrincipal from "./components/layout/LayoutPrincipal";
 import PaginaLogin from "./pages/PaginaLogin";
 import PaginaPerfil from "./pages/PaginaPerfil";
-import Dashboard from "./pages/Dashboard";
+import PaginaDashboard from "./pages/PaginaDashboard";
 import PaginaEscolas from "./pages/PaginaEscolas";
 import PaginaAlunos from "./pages/PaginaAlunos";
 import PaginaTurmas from "./pages/PaginaTurmas";
@@ -31,7 +31,7 @@ function App() {
 
           <Route element={<RotaProtegida />}>
             <Route path="/" element={<LayoutPrincipal />}>
-              <Route index element={<Dashboard />} />
+              <Route index element={<PaginaDashboard />} />
               <Route path="perfil" element={<PaginaPerfil />} />
               <Route path="escolas" element={<PaginaEscolas />} />
               <Route path="alunos" element={<PaginaAlunos />} />

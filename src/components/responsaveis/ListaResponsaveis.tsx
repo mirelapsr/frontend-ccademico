@@ -1,11 +1,17 @@
 import { useMemo, useState } from "react";
-import type { Responsavel } from "../../types";
+import type { AlunoResponsavel, Escola, Matricula, Responsavel, Turma } from "../../types";
 import { limparDigitos } from "../../utils/formatadores";
+import { mapearEscolaPorAluno } from "../../utils/escolaPorAluno";
 import CardResponsavel from "./CardResponsavel";
 import "./ListaResponsaveis.css";
 
 interface ListaResponsaveisProps {
   responsaveis: Responsavel[];
+  escolas: Escola[];
+  /** Responsável → vínculos → aluno → matrícula ativa → turma → escola. */
+  vinculos: AlunoResponsavel[];
+  matriculas: Matricula[];
+  turmas: Turma[];
   carregando: boolean;
   erro: string | null;
   aoDispensarErro: () => void;
@@ -17,6 +23,10 @@ interface ListaResponsaveisProps {
 
 function ListaResponsaveis({
   responsaveis,
+  escolas,
+  vinculos,
+  matriculas,
+  turmas,
   carregando,
   erro,
   aoDispensarErro,
@@ -26,20 +36,41 @@ function ListaResponsaveis({
   aoExcluirResponsavel,
 }: ListaResponsaveisProps) {
   const [busca, setBusca] = useState("");
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  // Lookup O(1): idResponsavel → escolas dos alunos vinculados (pode haver mais de uma).
+  const escolasPorResponsavel = useMemo(() => {
+    const escolaPorAluno = mapearEscolaPorAluno(matriculas, turmas);
+    const mapa = new Map<number, Set<string>>();
+    for (const vinculo of vinculos) {
+      const escolaId = escolaPorAluno.get(vinculo.alunoId);
+      if (escolaId === undefined) continue;
+      const escolasDoResp = mapa.get(vinculo.responsavelId) ?? new Set<string>();
+      escolasDoResp.add(String(escolaId));
+      mapa.set(vinculo.responsavelId, escolasDoResp);
+    }
+    return mapa;
+  }, [vinculos, matriculas, turmas]);
 
   const responsaveisFiltrados = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
     const buscaSoDigitos = limparDigitos(busca);
 
-    if (buscaNormalizada === "") return responsaveis;
+    if (buscaNormalizada === "" && filtroEscola === "todas") return responsaveis;
 
     return responsaveis.filter((responsavel) => {
+      const combinaEscola =
+        filtroEscola === "todas" ||
+        (escolasPorResponsavel.get(responsavel.idResponsavel)?.has(filtroEscola) ?? false);
+      if (!combinaEscola) return false;
+      if (buscaNormalizada === "") return true;
+
       const combinaNome = responsavel.nomeResp.toLowerCase().includes(buscaNormalizada);
       const combinaCpf =
         buscaSoDigitos !== "" && (responsavel.cpfResp ?? "").includes(buscaSoDigitos);
       return combinaNome || combinaCpf;
     });
-  }, [responsaveis, busca]);
+  }, [responsaveis, escolasPorResponsavel, busca, filtroEscola]);
 
   return (
     <section className="lista-responsaveis">
@@ -84,6 +115,20 @@ function ListaResponsaveis({
             aria-label="Buscar responsáveis por nome ou CPF"
           />
         </label>
+
+        <select
+          className="lista-responsaveis__select"
+          value={filtroEscola}
+          onChange={(evento) => setFiltroEscola(evento.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
       </div>
 
       {carregando ? (
@@ -94,7 +139,7 @@ function ListaResponsaveis({
         <p className="lista-responsaveis__vazio-geral">
           {responsaveis.length === 0
             ? "Nenhum responsável cadastrado ainda."
-            : "Nenhum responsável encontrado para essa busca."}
+            : "Nenhum responsável encontrado para esses filtros."}
         </p>
       ) : (
         <div className="lista-responsaveis__grade">

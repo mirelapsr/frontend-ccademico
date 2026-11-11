@@ -17,6 +17,7 @@ import { AZUL_CLARO } from "../components/dashboard/cores";
 import CardGrafico from "../components/dashboard/CardGrafico";
 import FiltrosDashboard from "../components/dashboard/FiltrosDashboard";
 import GraficoAlunosPorSerie from "../components/dashboard/GraficoAlunosPorSerie";
+import GraficoAssiduidade from "../components/dashboard/GraficoAssiduidade";
 import GraficoDesempenhoMaterias from "../components/dashboard/GraficoDesempenhoMaterias";
 import GraficoSaudeFinanceira from "../components/dashboard/GraficoSaudeFinanceira";
 import TooltipGrafico from "../components/dashboard/TooltipGrafico";
@@ -26,6 +27,7 @@ import type {
   Avaliacao,
   Boleto,
   Escola,
+  Frequencia,
   GradeCurricular,
   Materia,
   Matricula,
@@ -37,6 +39,7 @@ import {
   FILTROS_PADRAO,
   anosLetivosDisponiveis,
   calcularAlunosPorSerie,
+  calcularAssiduidadePorTurma,
   calcularDesempenhoPorMateria,
   calcularKpis,
   calcularOcupacaoPorTurma,
@@ -47,7 +50,7 @@ import {
   type FiltrosDashboard as Filtros,
 } from "../utils/dashboard";
 import "../components/dashboard/dashboard.css";
-import "./Dashboard.css";
+import "./PaginaDashboard.css";
 
 // Paleta institucional (marinho + variações) para o gráfico de pizza.
 const CORES_TURNO: Record<Turno, string> = {
@@ -83,7 +86,7 @@ function CardKpi({ rotulo, valor, descricao }: CardKpiProps) {
   );
 }
 
-function Dashboard() {
+function PaginaDashboard() {
   const dataHoje = useMemo(formatarDataHoje, []);
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_PADRAO);
 
@@ -103,6 +106,8 @@ function Dashboard() {
   const { dados: materias, carregando: carregandoMaterias, erro: erroMaterias } =
     useLista<Materia>("/materias");
   const { dados: boletos, carregando: carregandoBoletos, erro: erroBoletos } = useLista<Boleto>("/boletos");
+  const { dados: frequencias, carregando: carregandoFrequencias, erro: erroFrequencias } =
+    useLista<Frequencia>("/frequencias");
 
   const carregandoBase = carregandoEscolas || carregandoAlunos || carregandoTurmas || carregandoMatriculas;
   const erroBase = erroEscolas ?? erroAlunos ?? erroTurmas ?? erroMatriculas;
@@ -140,6 +145,11 @@ function Dashboard() {
   const dadosPorSerie = useMemo(
     () => calcularAlunosPorSerie(turmasFiltradas, matriculas),
     [turmasFiltradas, matriculas]
+  );
+
+  const resumoAssiduidade = useMemo(
+    () => calcularAssiduidadePorTurma({ frequencias, grades, turmasFiltradas, escolas }),
+    [frequencias, grades, turmasFiltradas, escolas]
   );
 
   const limparFiltros = () => setFiltros(FILTROS_PADRAO);
@@ -261,6 +271,14 @@ function Dashboard() {
           aoLimparFiltros={acaoLimpar}
         />
 
+        <GraficoAssiduidade
+          className="dashboard__grafico--cheio"
+          resumo={resumoAssiduidade}
+          carregando={carregandoFrequencias || carregandoGrades || carregandoBase}
+          erro={erroFrequencias ?? erroGrades}
+          aoLimparFiltros={acaoLimpar}
+        />
+
         <GraficoSaudeFinanceira
           className="dashboard__grafico--cheio"
           resumo={resumoFinanceiro}
@@ -273,4 +291,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default PaginaDashboard;

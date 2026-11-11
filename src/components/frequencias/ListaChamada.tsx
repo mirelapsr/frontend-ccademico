@@ -1,4 +1,12 @@
-import type { Aluno, GradeCurricular, Materia, SituacaoFrequencia, Turma } from "../../types";
+import { useMemo, useState } from "react";
+import type {
+  Aluno,
+  Escola,
+  GradeCurricular,
+  Materia,
+  SituacaoFrequencia,
+  Turma,
+} from "../../types";
 import CardChamada from "./CardChamada";
 import "./ListaChamada.css";
 
@@ -9,6 +17,7 @@ export interface LinhaChamada {
 }
 
 interface ListaChamadaProps {
+  escolas: Escola[];
   turmas: Turma[];
   gradesDaTurma: GradeCurricular[];
   materias: Materia[];
@@ -34,6 +43,7 @@ function nomeMateria(materias: Materia[], materiaId: number): string {
 }
 
 function ListaChamada({
+  escolas,
   turmas,
   gradesDaTurma,
   materias,
@@ -53,6 +63,26 @@ function ListaChamada({
   aoMarcarTodosPresentes,
   aoSalvar,
 }: ListaChamadaProps) {
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
+  const turmasVisiveis = useMemo(
+    () =>
+      filtroEscola === "todas"
+        ? turmas
+        : turmas.filter((turma) => String(turma.escolaId) === filtroEscola),
+    [turmas, filtroEscola]
+  );
+
+  // Cascata: se a turma escolhida não pertence à nova escola, limpa turma (e disciplina).
+  function mudarEscola(novaEscola: string) {
+    setFiltroEscola(novaEscola);
+    const turmaAtual = turmaSelecionada === "" ? undefined : mapaTurmas.get(turmaSelecionada);
+    if (turmaAtual && novaEscola !== "todas" && String(turmaAtual.escolaId) !== novaEscola) {
+      aoMudarTurma("");
+    }
+  }
+
   const prontoParaChamada = turmaSelecionada !== "" && gradeSelecionada !== "" && data !== "";
 
   return (
@@ -63,6 +93,18 @@ function ListaChamada({
 
       <div className="lista-chamada__filtros">
         <label className="lista-chamada__campo">
+          <span>Escola</span>
+          <select value={filtroEscola} onChange={(evento) => mudarEscola(evento.target.value)}>
+            <option value="todas">Todas as escolas</option>
+            {escolas.map((escola) => (
+              <option key={escola.idEscola} value={escola.idEscola}>
+                {escola.nomeEscola}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="lista-chamada__campo">
           <span>Turma *</span>
           <select
             value={turmaSelecionada}
@@ -71,7 +113,7 @@ function ListaChamada({
             }
           >
             <option value="">Selecione a turma...</option>
-            {turmas.map((turma) => (
+            {turmasVisiveis.map((turma) => (
               <option key={turma.idTurma} value={turma.idTurma}>
                 {turma.nomeTurma}
               </option>

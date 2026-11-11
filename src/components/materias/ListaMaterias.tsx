@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
-import type { Materia } from "../../types";
+import type { Escola, GradeCurricular, Materia, Turma } from "../../types";
 import CardMateria from "./CardMateria";
 import "./ListaMaterias.css";
 
 interface ListaMateriasProps {
   materias: Materia[];
+  escolas: Escola[];
+  /** Matéria não tem FK de escola: materiaId → grade → turma → escolaId. */
+  grades: GradeCurricular[];
+  turmas: Turma[];
   aoNovaMateria: () => void;
   aoEditarMateria: (idMateria: number) => void;
   aoExcluirMateria: (idMateria: number) => void;
@@ -16,6 +20,9 @@ interface ListaMateriasProps {
 
 function ListaMaterias({
   materias,
+  escolas,
+  grades,
+  turmas,
   aoNovaMateria,
   aoEditarMateria,
   aoExcluirMateria,
@@ -25,14 +32,34 @@ function ListaMaterias({
   aoRecarregar,
 }: ListaMateriasProps) {
   const [busca, setBusca] = useState("");
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  // Lookup O(1): idMateria → escolas onde ela é ofertada (via grade → turma).
+  const escolasPorMateria = useMemo(() => {
+    const escolaPorTurma = new Map(turmas.map((turma) => [turma.idTurma, turma.escolaId]));
+    const mapa = new Map<number, Set<string>>();
+    for (const grade of grades) {
+      const escolaId = escolaPorTurma.get(grade.turmaId);
+      if (escolaId === undefined) continue;
+      const escolasDaMateria = mapa.get(grade.materiaId) ?? new Set<string>();
+      escolasDaMateria.add(String(escolaId));
+      mapa.set(grade.materiaId, escolasDaMateria);
+    }
+    return mapa;
+  }, [grades, turmas]);
 
   const materiasFiltradas = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
-    if (buscaNormalizada === "") return materias;
-    return materias.filter((materia) =>
-      materia.nomeMateria.toLowerCase().includes(buscaNormalizada)
-    );
-  }, [materias, busca]);
+    if (buscaNormalizada === "" && filtroEscola === "todas") return materias;
+    return materias.filter((materia) => {
+      const combinaBusca =
+        buscaNormalizada === "" || materia.nomeMateria.toLowerCase().includes(buscaNormalizada);
+      const combinaEscola =
+        filtroEscola === "todas" ||
+        (escolasPorMateria.get(materia.idMateria)?.has(filtroEscola) ?? false);
+      return combinaBusca && combinaEscola;
+    });
+  }, [materias, escolasPorMateria, busca, filtroEscola]);
 
   return (
     <section className="lista-materias">
@@ -72,6 +99,20 @@ function ListaMaterias({
             aria-label="Buscar matérias por nome"
           />
         </label>
+
+        <select
+          className="lista-materias__select"
+          value={filtroEscola}
+          onChange={(evento) => setFiltroEscola(evento.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
       </div>
 
       {materiasFiltradas.length === 0 ? (
@@ -80,7 +121,7 @@ function ListaMaterias({
             ? "Carregando matérias..."
             : materias.length === 0
               ? "Nenhuma matéria cadastrada ainda."
-              : "Nenhuma matéria encontrada para essa busca."}
+              : "Nenhuma matéria encontrada para esses filtros."}
         </p>
       ) : (
         <div className="lista-materias__grade">

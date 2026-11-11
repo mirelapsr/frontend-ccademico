@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
-import type { Periodo, SituacaoPeriodo } from "../../types";
+import type { Escola, Periodo, SituacaoPeriodo, Turma } from "../../types";
 import CardPeriodo from "./CardPeriodo";
 import "./ListaPeriodos.css";
 
 interface ListaPeriodosProps {
   periodos: Periodo[];
+  escolas: Escola[];
+  /** Período não tem FK de escola: o vínculo é pelo ano letivo das turmas da escola. */
+  turmas: Turma[];
   aoNovoPeriodo: () => void;
   aoEditarPeriodo: (idPeriodo: number) => void;
   aoExcluirPeriodo: (idPeriodo: number) => void;
@@ -18,6 +21,8 @@ type FiltroSituacao = "todas" | SituacaoPeriodo;
 
 function ListaPeriodos({
   periodos,
+  escolas,
+  turmas,
   aoNovoPeriodo,
   aoEditarPeriodo,
   aoExcluirPeriodo,
@@ -28,6 +33,19 @@ function ListaPeriodos({
 }: ListaPeriodosProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  // Lookup O(1): idEscola (texto) → anos letivos com turma naquela escola.
+  const anosPorEscola = useMemo(() => {
+    const mapa = new Map<string, Set<number>>();
+    for (const turma of turmas) {
+      const chave = String(turma.escolaId);
+      const anos = mapa.get(chave) ?? new Set<number>();
+      anos.add(turma.anoLetivo);
+      mapa.set(chave, anos);
+    }
+    return mapa;
+  }, [turmas]);
 
   const periodosFiltrados = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
@@ -40,9 +58,12 @@ function ListaPeriodos({
 
       const combinaFiltro = filtroSituacao === "todas" || periodo.situacao === filtroSituacao;
 
-      return combinaBusca && combinaFiltro;
+      const combinaEscola =
+        filtroEscola === "todas" || (anosPorEscola.get(filtroEscola)?.has(periodo.ano) ?? false);
+
+      return combinaBusca && combinaFiltro && combinaEscola;
     });
-  }, [periodos, busca, filtroSituacao]);
+  }, [periodos, anosPorEscola, busca, filtroSituacao, filtroEscola]);
 
   return (
     <section className="lista-periodos">
@@ -82,6 +103,20 @@ function ListaPeriodos({
             aria-label="Buscar períodos por nome ou ano"
           />
         </label>
+
+        <select
+          className="lista-periodos__select"
+          value={filtroEscola}
+          onChange={(evento) => setFiltroEscola(evento.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
 
         <select
           className="lista-periodos__select"

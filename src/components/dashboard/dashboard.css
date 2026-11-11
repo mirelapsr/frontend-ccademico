@@ -4,7 +4,7 @@
 
 .filtros-dashboard {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* desktop: tudo na mesma linha; quebra só no container estreito */
   align-items: flex-end;
   gap: 16px 20px;
   background: #ffffff;
@@ -19,7 +19,8 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 0;
+  flex: 1 1 150px;
+  min-width: 100px;
 }
 
 .filtros-dashboard__campo > label,
@@ -32,8 +33,11 @@
 }
 
 .filtros-dashboard select {
-  min-width: 180px;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 8px 10px;
   border: 1px solid var(--borda);
   border-radius: 8px;
@@ -43,13 +47,15 @@
   color: var(--texto);
 }
 
+/* Turno: largura do próprio conteúdo (5 chips) — não encolhe, para "Integral" não quebrar. */
 .filtros-dashboard__campo--turno {
-  flex: 1 1 280px;
+  flex: 0 0 auto;
+  min-width: auto;
 }
 
 .filtros-dashboard__chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
@@ -62,6 +68,7 @@
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background 160ms ease,
@@ -87,6 +94,8 @@
 }
 
 .filtros-dashboard__limpar {
+  flex: 0 0 auto;
+  white-space: nowrap;
   margin-left: auto;
   padding: 8px 16px;
   border-radius: 8px;
@@ -107,6 +116,23 @@
 .filtros-dashboard__limpar:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* Mesmo breakpoint de container usado no grid do dashboard (reage à sidebar). */
+@container dashboard (max-width: 860px) {
+  .filtros-dashboard {
+    flex-wrap: wrap;
+  }
+
+  .filtros-dashboard__campo,
+  .filtros-dashboard__campo--turno {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .filtros-dashboard__chips {
+    flex-wrap: wrap;
+  }
 }
 
 /* --- Cabeçalho e rodapé do card de gráfico ------------------------------ */

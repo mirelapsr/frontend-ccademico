@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import type { GradeCurricular, Turma, Materia, Professor } from "../../types";
+import type { Escola, GradeCurricular, Turma, Materia, Professor } from "../../types";
 import CardGradeCurricular from "./CardGradeCurricular";
 import "./ListaGrades.css";
 
 interface ListaGradesProps {
   grades: GradeCurricular[];
+  escolas: Escola[];
   turmas: Turma[];
   materias: Materia[];
   professores: Professor[];
@@ -19,6 +20,7 @@ interface ListaGradesProps {
 
 function ListaGrades({
   grades,
+  escolas,
   turmas,
   materias,
   professores,
@@ -33,6 +35,7 @@ function ListaGrades({
   const [busca, setBusca] = useState("");
   const [filtroAno, setFiltroAno] = useState<"todos" | number>("todos");
   const [filtroTurma, setFiltroTurma] = useState("todas"); // "todas" ou o idTurma como texto
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
 
   const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
   const mapaMaterias = useMemo(() => new Map(materias.map((m) => [m.idMateria, m])), [materias]);
@@ -48,6 +51,23 @@ function ListaGrades({
       ),
     [turmas]
   );
+
+  const turmasVisiveis = useMemo(
+    () =>
+      filtroEscola === "todas"
+        ? turmasOrdenadas
+        : turmasOrdenadas.filter((turma) => String(turma.escolaId) === filtroEscola),
+    [turmasOrdenadas, filtroEscola]
+  );
+
+  // Cascata: descarta a turma escolhida se ela não pertence à nova escola.
+  function mudarEscola(novaEscola: string) {
+    setFiltroEscola(novaEscola);
+    const turmaAtual = filtroTurma === "todas" ? undefined : mapaTurmas.get(Number(filtroTurma));
+    if (turmaAtual && novaEscola !== "todas" && String(turmaAtual.escolaId) !== novaEscola) {
+      setFiltroTurma("todas");
+    }
+  }
 
   const anosDisponiveis = useMemo(() => {
     const anos = grades
@@ -74,9 +94,11 @@ function ListaGrades({
 
       const combinaTurma = filtroTurma === "todas" || String(grade.turmaId) === filtroTurma;
 
-      return combinaBusca && combinaFiltro && combinaTurma;
+      const combinaEscola = filtroEscola === "todas" || String(turma?.escolaId) === filtroEscola;
+
+      return combinaBusca && combinaFiltro && combinaTurma && combinaEscola;
     });
-  }, [grades, mapaTurmas, mapaMaterias, mapaProfessores, busca, filtroAno, filtroTurma]);
+  }, [grades, mapaTurmas, mapaMaterias, mapaProfessores, busca, filtroAno, filtroTurma, filtroEscola]);
 
   return (
     <section className="lista-grades">
@@ -120,12 +142,26 @@ function ListaGrades({
 
         <select
           className="lista-grades__select"
+          value={filtroEscola}
+          onChange={(evento) => mudarEscola(evento.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="lista-grades__select"
           value={filtroTurma}
           onChange={(evento) => setFiltroTurma(evento.target.value)}
           aria-label="Filtrar por turma"
         >
           <option value="todas">Todas as turmas</option>
-          {turmasOrdenadas.map((turma) => (
+          {turmasVisiveis.map((turma) => (
             <option key={turma.idTurma} value={turma.idTurma}>
               {turma.nomeTurma} ({turma.anoLetivo})
             </option>

@@ -11,7 +11,7 @@ import {
   excluirAluno,
   mensagemDeErroAluno,
 } from "../services/alunoService";
-import type { Aluno, AlunoEntrada, Matricula, Turma } from "../types";
+import type { Aluno, AlunoEntrada, Escola, Matricula, Turma } from "../types";
 
 type Tela = "lista" | "formulario";
 
@@ -25,6 +25,7 @@ function PaginaAlunos() {
   const { dados: matriculas, erro: erroMatriculas, recarregar: recarregarMatriculas } =
     useLista<Matricula>("/matriculas");
   const { dados: turmas, erro: erroTurmas, recarregar: recarregarTurmas } = useLista<Turma>("/turmas");
+  const { dados: escolas } = useLista<Escola>("/escolas");
 
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [alunoEmEdicao, setAlunoEmEdicao] = useState<Aluno | null>(null);
@@ -124,6 +125,7 @@ function PaginaAlunos() {
         <ListaAlunos
           alunos={alunos}
           nomeTurmaPorAluno={nomeTurmaPorAluno}
+          escolas={escolas}
           turmas={turmas}
           turmaIdPorAluno={turmaIdPorAluno}
           carregando={carregando}

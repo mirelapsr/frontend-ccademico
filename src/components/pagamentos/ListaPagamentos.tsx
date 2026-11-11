@@ -1,10 +1,16 @@
 import { useMemo, useState } from "react";
-import type { Aluno, Boleto, SituacaoBoleto } from "../../types";
+import type { Aluno, Boleto, Escola, Matricula, SituacaoBoleto, Turma } from "../../types";
+import { mapearEscolaPorAluno } from "../../utils/escolaPorAluno";
 import CardPagamento from "./CardPagamento";
+import "./ListaPagamentos.css";
 
 interface ListaPagamentosProps {
   pagamentos: Boleto[];
   alunos: Aluno[];
+  escolas: Escola[];
+  /** Matrículas + turmas resolvem a escola do aluno (boleto não tem FK de escola). */
+  matriculas: Matricula[];
+  turmas: Turma[];
   aoNovoPagamento: () => void;
   aoDarBaixaPagamento: (idBoleto: number) => void;
   aoExcluirPagamento: (idBoleto: number) => void;
@@ -13,12 +19,22 @@ interface ListaPagamentosProps {
 function ListaPagamentos({
   pagamentos,
   alunos,
+  escolas,
+  matriculas,
+  turmas,
   aoNovoPagamento,
   aoDarBaixaPagamento,
   aoExcluirPagamento,
 }: ListaPagamentosProps) {
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<"todas" | SituacaoBoleto>("todas");
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
+
+  // Lookup O(1): idAluno → idEscola (via matrícula ativa).
+  const escolaPorAluno = useMemo(
+    () => mapearEscolaPorAluno(matriculas, turmas),
+    [matriculas, turmas]
+  );
 
   const pagamentosFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -33,9 +49,12 @@ function ListaPagamentos({
         (aluno?.nomeAluno ?? "").toLowerCase().includes(termo);
 
       const combinaFiltro = filtroSituacao === "todas" || p.situacao === filtroSituacao;
-      return combinaBusca && combinaFiltro;
+      const combinaEscola =
+        filtroEscola === "todas" ||
+        (idAlunoBoleto !== undefined && String(escolaPorAluno.get(idAlunoBoleto)) === filtroEscola);
+      return combinaBusca && combinaFiltro && combinaEscola;
     });
-  }, [pagamentos, alunos, busca, filtroSituacao]);
+  }, [pagamentos, alunos, escolaPorAluno, busca, filtroSituacao, filtroEscola]);
 
   return (
     <section>
@@ -43,18 +62,31 @@ function ListaPagamentos({
         <h2>Controle de Pagamentos</h2>
         <button onClick={aoNovoPagamento}>+ Novo Pagamento</button>
       </header>
-      <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+      <div className="lista-pagamentos__filtros">
         <input
           type="search"
+          className="lista-pagamentos__busca"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por aluno ou número do pagamento..."
-          style={{ flex: "1 1 300px" }}
         />
         <select
+          className="lista-pagamentos__select"
+          value={filtroEscola}
+          onChange={(e) => setFiltroEscola(e.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
+        <select
+          className="lista-pagamentos__select"
           value={filtroSituacao}
           onChange={(e) => setFiltroSituacao(e.target.value as "todas" | SituacaoBoleto)}
-          style={{ flex: "0 1 200px" }}
         >
           <option value="todas">Todas as situações</option>
           <option value="Pendente">Pendente</option>

@@ -1,0 +1,30 @@
+.lista-pagamentos__filtros {
+  display: flex;
+  flex-wrap: nowrap; /* desktop: tudo na mesma linha; quebra só no breakpoint mobile */
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.lista-pagamentos__busca {
+  flex: 2 1 160px;
+  min-width: 120px;
+}
+
+.lista-pagamentos__select {
+  flex: 1 1 170px;
+  min-width: 120px;
+  max-width: 280px;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .lista-pagamentos__filtros {
+    flex-wrap: wrap;
+  }
+
+  .lista-pagamentos__busca,
+  .lista-pagamentos__select {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+}

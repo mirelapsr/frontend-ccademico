@@ -8,6 +8,7 @@ import {
   mensagemDeErroFrequencia,
 } from "../services/frequenciaService";
 import type {
+  Escola,
   Frequencia,
   Matricula,
   Aluno,
@@ -42,6 +43,7 @@ function PaginaFrequencias() {
   const { dados: grades } = useLista<GradeCurricular>("/grades");
   const { dados: materias } = useLista<Materia>("/materias");
   const { dados: turmas } = useLista<Turma>("/turmas");
+  const { dados: escolas } = useLista<Escola>("/escolas");
 
   const [turmaSelecionada, setTurmaSelecionada] = useState<number | "">("");
   const [gradeSelecionada, setGradeSelecionada] = useState<number | "">("");
@@ -235,6 +237,7 @@ function PaginaFrequencias() {
       )}
 
       <ListaChamada
+        escolas={escolas}
         turmas={turmas}
         gradesDaTurma={gradesDaTurma}
         materias={materias}

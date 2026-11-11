@@ -11,10 +11,13 @@ import {
   listarPeriodos,
   mensagemDeErroPeriodo,
 } from "../services/periodoService";
-import type { Periodo, PeriodoEntrada } from "../types";
+import { useLista } from "../hooks/useLista";
+import type { Escola, Periodo, PeriodoEntrada, Turma } from "../types";
 
 function PaginaPeriodos() {
   const [periodos, setPeriodos] = useState<Periodo[]>([]);
+  const { dados: escolas } = useLista<Escola>("/escolas");
+  const { dados: turmas } = useLista<Turma>("/turmas");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -122,6 +125,8 @@ function PaginaPeriodos() {
       {!modalAberto ? (
         <ListaPeriodos
           periodos={periodos}
+          escolas={escolas}
+          turmas={turmas}
           carregando={carregando}
           erro={erro}
           aoDispensarErro={() => setErro(null)}

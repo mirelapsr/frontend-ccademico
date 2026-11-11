@@ -10,7 +10,7 @@ import {
   excluirPagamento,
   mensagemDeErroPagamento,
 } from "../services/pagamentoService";
-import type { Aluno, Boleto, BoletoEntrada } from "../types";
+import type { Aluno, Boleto, BoletoEntrada, Escola, Matricula, Turma } from "../types";
 
 interface Feedback {
   tipo: TipoToast;
@@ -30,6 +30,10 @@ export default function PaginaPagamentos() {
     carregando: carregandoAlunos,
     erro: erroAlunos,
   } = useLista<Aluno>("/alunos");
+
+  const { dados: escolas } = useLista<Escola>("/escolas");
+  const { dados: matriculas } = useLista<Matricula>("/matriculas");
+  const { dados: turmas } = useLista<Turma>("/turmas");
 
   const [telaAtual, setTelaAtual] = useState<"lista" | "formulario">("lista");
   const [pagamentoExcluir, setPagamentoExcluir] = useState<number | null>(null);
@@ -117,6 +121,9 @@ export default function PaginaPagamentos() {
         <ListaPagamentos
           pagamentos={pagamentos}
           alunos={alunos}
+          escolas={escolas}
+          matriculas={matriculas}
+          turmas={turmas}
           aoNovoPagamento={() => setTelaAtual("formulario")}
           aoDarBaixaPagamento={(id) => void handleDarBaixa(id)}
           aoExcluirPagamento={(id) => setPagamentoExcluir(id)}

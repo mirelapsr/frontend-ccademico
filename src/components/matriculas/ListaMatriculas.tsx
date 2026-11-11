@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import type { Aluno, Matricula, SituacaoMatricula, Turma } from "../../types";
+import type { Aluno, Escola, Matricula, SituacaoMatricula, Turma } from "../../types";
 import CardMatricula from "./CardMatricula";
 import "./ListaMatriculas.css";
 
 interface ListaMatriculasProps {
   matriculas: Matricula[];
   alunos: Aluno[];
+  escolas: Escola[];
   turmas: Turma[];
   aoNovaMatricula: () => void;
   aoEditarMatricula: (idMatricula: number) => void;
@@ -17,6 +18,7 @@ type FiltroSituacao = "todas" | SituacaoMatricula;
 function ListaMatriculas({
   matriculas,
   alunos,
+  escolas,
   turmas,
   aoNovaMatricula,
   aoEditarMatricula,
@@ -25,8 +27,10 @@ function ListaMatriculas({
   const [busca, setBusca] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
   const [filtroTurma, setFiltroTurma] = useState("todas"); // "todas" ou o idTurma como texto
+  const [filtroEscola, setFiltroEscola] = useState("todas"); // "todas" ou o idEscola como texto
 
   const mapaAlunos = useMemo(() => new Map(alunos.map((a) => [a.idAluno, a])), [alunos]);
+  const mapaTurmas = useMemo(() => new Map(turmas.map((t) => [t.idTurma, t])), [turmas]);
   const turmasOrdenadas = useMemo(
     () =>
       [...turmas].sort(
@@ -34,6 +38,23 @@ function ListaMatriculas({
       ),
     [turmas]
   );
+
+  const turmasVisiveis = useMemo(
+    () =>
+      filtroEscola === "todas"
+        ? turmasOrdenadas
+        : turmasOrdenadas.filter((turma) => String(turma.escolaId) === filtroEscola),
+    [turmasOrdenadas, filtroEscola]
+  );
+
+  // Cascata: descarta a turma escolhida se ela não pertence à nova escola.
+  function mudarEscola(novaEscola: string) {
+    setFiltroEscola(novaEscola);
+    const turmaAtual = filtroTurma === "todas" ? undefined : mapaTurmas.get(Number(filtroTurma));
+    if (turmaAtual && novaEscola !== "todas" && String(turmaAtual.escolaId) !== novaEscola) {
+      setFiltroTurma("todas");
+    }
+  }
 
   const matriculasFiltradas = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
@@ -50,9 +71,13 @@ function ListaMatriculas({
 
       const combinaTurma = filtroTurma === "todas" || String(matricula.turmaId) === filtroTurma;
 
-      return combinaBusca && combinaFiltro && combinaTurma;
+      const combinaEscola =
+        filtroEscola === "todas" ||
+        String(mapaTurmas.get(matricula.turmaId)?.escolaId) === filtroEscola;
+
+      return combinaBusca && combinaFiltro && combinaTurma && combinaEscola;
     });
-  }, [matriculas, mapaAlunos, busca, filtroSituacao, filtroTurma]);
+  }, [matriculas, mapaAlunos, mapaTurmas, busca, filtroSituacao, filtroTurma, filtroEscola]);
 
   return (
     <section className="lista-matriculas">
@@ -77,12 +102,26 @@ function ListaMatriculas({
 
         <select
           className="lista-matriculas__select"
+          value={filtroEscola}
+          onChange={(evento) => mudarEscola(evento.target.value)}
+          aria-label="Filtrar por escola"
+        >
+          <option value="todas">Todas as escolas</option>
+          {escolas.map((escola) => (
+            <option key={escola.idEscola} value={escola.idEscola}>
+              {escola.nomeEscola}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="lista-matriculas__select"
           value={filtroTurma}
           onChange={(evento) => setFiltroTurma(evento.target.value)}
           aria-label="Filtrar por turma"
         >
           <option value="todas">Todas as turmas</option>
-          {turmasOrdenadas.map((turma) => (
+          {turmasVisiveis.map((turma) => (
             <option key={turma.idTurma} value={turma.idTurma}>
               {turma.nomeTurma} ({turma.anoLetivo})
             </option>

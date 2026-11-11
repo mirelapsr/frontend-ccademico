@@ -14,6 +14,7 @@ import {
 import type {
   Avaliacao,
   AvaliacaoEntrada,
+  Escola,
   GradeCurricular,
   Materia,
   Turma,
@@ -42,6 +43,7 @@ function PaginaAvaliacoes() {
     useLista<Turma>("/turmas");
   const { dados: periodos, carregando: carregandoPeriodos, erro: erroPeriodos } =
     useLista<Periodo>("/periodos");
+  const { dados: escolas } = useLista<Escola>("/escolas");
 
   const [telaAtual, setTelaAtual] = useState<Tela>("lista");
   const [avaliacaoEmEdicao, setAvaliacaoEmEdicao] = useState<Avaliacao | null>(null);
@@ -155,6 +157,7 @@ function PaginaAvaliacoes() {
       {telaAtual === "lista" ? (
         <ListaAvaliacoes
           avaliacoes={avaliacoes}
+          escolas={escolas}
           grades={grades}
           materias={materias}
           turmas={turmas}
