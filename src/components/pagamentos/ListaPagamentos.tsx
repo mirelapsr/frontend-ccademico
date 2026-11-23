@@ -97,7 +97,7 @@ function ListaPagamentos({
       </div>
       <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "16px" }}>
         {pagamentosFiltrados.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#666", padding: "24px" }}>
+          <p style={{ textAlign: "center", color: "var(--texto-suave)", padding: "24px" }}>
             Nenhum pagamento encontrado.
           </p>
         ) : (

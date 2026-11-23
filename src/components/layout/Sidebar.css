@@ -1,8 +1,8 @@
 .sidebar {
   width: 260px;
   min-height: 100vh;
-  background-color: #172554;
-  color: #f8fafc;
+  background-color: var(--tomo-ink);
+  color: #ffffff;
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
@@ -13,48 +13,47 @@
   width: 72px;
 }
 
-/* Container da Marca / Título */
+/* Container da marca */
 .sidebar__marca {
-  padding: 1.5rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem;
+  border-bottom: 1px solid rgba(247, 242, 231, 0.14);
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
-/* Força explicitamente a quebra em coluna: um embaixo do outro */
-.sidebar__marca-texto {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+/* Wrapper da logo: integração direta sobre o Ink, sem placa, sombra ou cantos.
+   A variante "escuro" do SVG já traz a tipografia em Paper e fundo transparente. */
+.sidebar__logo-placa {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  box-sizing: border-box;
 }
 
-.sidebar__marca-eyebrow {
+/* Logo completo: largura fluida, proporção original (640:220) preservada. */
+.sidebar__logo-completo {
   display: block;
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
-  line-height: 1.2;
-}
-
-.sidebar__marca-titulo {
-  display: block;
-  margin: 0;
-  font-size: 1.45rem;
-  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.2;
-}
-
-.sidebar__marca-brasao {
-  width: 36px;
+  width: 100%;
   height: auto;
-  margin: 0 auto;
+  aspect-ratio: 640 / 220;
+}
+
+/* Recolhida: só o ícone, em um quadrado fixo e centralizado. */
+.sidebar__logo-placa--icone {
+  width: 44px;
+  height: 44px;
+  padding: 6px;
+  flex-shrink: 0;
+}
+
+.sidebar__logo-icone {
   display: block;
-  border-radius: 4px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* Lista de navegação */
@@ -72,7 +71,7 @@
   gap: 12px;
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  color: #cbd5e1;
+  color: #ffffff;
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 500;
@@ -80,18 +79,19 @@
 }
 
 .sidebar__link:hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: rgba(247, 242, 231, 0.1); /* Paper atenuado sobre Ink */
   color: #ffffff;
 }
 
+/* Foco por teclado sobre a sidebar escura: contorno em Paper. */
 .sidebar__link:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--tomo-paper);
   outline-offset: -2px;
 }
 
 .sidebar__link--ativo,
 .sidebar__link--ativo:hover {
-  background-color: #1e3a8a;
+  background-color: var(--tomo-marine);
   color: #ffffff;
   font-weight: 600;
 }
@@ -106,7 +106,7 @@
   object-fit: contain;
   flex-shrink: 0;
   filter: brightness(0) invert(1);
-  opacity: 0.7;
+  opacity: 0.85;
   transition: opacity 0.2s ease;
 }
 

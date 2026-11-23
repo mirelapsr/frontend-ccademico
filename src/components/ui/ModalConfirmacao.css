@@ -3,7 +3,7 @@
 .modal-confirmacao__overlay {
   position: fixed;
   inset: 0;
-  background: rgba(22, 35, 63, 0.55);
+  background: rgba(25, 23, 19, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,11 +13,12 @@
 
 .modal-confirmacao__caixa {
   background: var(--superficie);
+  border: 1px solid var(--tomo-ink);
   border-radius: 12px;
   padding: 28px;
   max-width: 420px;
   width: 100%;
-  box-shadow: 0 12px 40px rgba(32, 28, 22, 0.25);
+  box-shadow: 0 12px 40px rgba(25, 23, 19, 0.25);
   animation: modal-confirmacao-entrar 0.15s ease-out;
 }
 

@@ -1,5 +1,21 @@
 .dashboard {
+  /* Paleta-fonte do Tomo Acadêmico, redefinida apenas no escopo do Dashboard:
+     os subcomponentes (filtros, cards, gráficos) herdam estes tokens sem
+     afetar as demais páginas, que serão redesenhadas em etapa futura. */
+  --fundo: var(--tomo-paper);
+  --superficie: var(--tomo-paper);
+  --texto: var(--tomo-ink);
+  --texto-suave: rgba(25, 23, 19, 0.72); /* Ink atenuado */
+  --borda: var(--tomo-ink);
+  --marinho: var(--tomo-marine);
+  --azul-acao: var(--tomo-marine);
+  --azul-acao-escuro: var(--tomo-marine);
+  --vinho: var(--tomo-press);
+  --perigo: var(--tomo-press);
+  --vazio: var(--tomo-newsprint);
+
   background: var(--fundo);
+  color: var(--texto);
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -19,6 +35,7 @@
 
 .dashboard__cabecalho h1 {
   font-size: 1.6rem;
+  color: var(--tomo-ink);
 }
 
 .dashboard__data {
@@ -41,11 +58,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: #ffffff;
+  background: var(--tomo-paper);
+  border: 1px solid var(--tomo-ink);
   border-radius: 12px;
-  box-shadow:
-    0 1px 2px rgba(32, 28, 22, 0.06),
-    0 2px 8px rgba(32, 28, 22, 0.07);
   padding: 18px 20px;
   min-width: 0;
 }
@@ -61,7 +76,7 @@
 .card-kpi__valor {
   font-family: var(--fonte-titulo);
   font-size: 1.9rem;
-  color: var(--marinho);
+  color: var(--tomo-ink);
   line-height: 1.15;
 }
 
@@ -83,11 +98,9 @@
 
 .dashboard__grafico {
   grid-column: span 12;
-  background: #ffffff;
+  background: var(--tomo-paper);
+  border: 1px solid var(--tomo-ink);
   border-radius: 12px;
-  box-shadow:
-    0 1px 2px rgba(32, 28, 22, 0.06),
-    0 2px 8px rgba(32, 28, 22, 0.07);
   padding: 20px 24px;
   min-width: 0;
   overflow: hidden;
@@ -113,6 +126,7 @@
 .dashboard__grafico h2 {
   margin: 0;
   font-size: 1.05rem;
+  color: var(--tomo-ink);
 }
 
 @keyframes dashboard-entrada {
@@ -166,5 +180,5 @@
   border-radius: 2px;
   color: var(--perigo);
   font-size: 0.85rem;
-  background: #fbeae9;
+  background: rgba(168, 37, 43, 0.08); /* Press atenuado */
 }

@@ -78,7 +78,7 @@ function ListaVinculos({
       </div>
       <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "16px" }}>
         {vinculosFiltrados.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#64748b", fontStyle: "italic", padding: "24px" }}>
+          <p style={{ textAlign: "center", color: "var(--texto-suave)", fontStyle: "italic", padding: "24px" }}>
             {vinculos.length === 0 ? "Nenhum vínculo cadastrado." : "Nenhum vínculo encontrado para esta pesquisa."}
           </p>
         ) : (

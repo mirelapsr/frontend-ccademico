@@ -17,7 +17,7 @@ import {
 } from "../../utils/dashboard";
 import { ANIMACAO_GRAFICO } from "./animacao";
 import CardGrafico from "./CardGrafico";
-import { AMBAR, AZUL_CLARO, VERMELHO } from "./cores";
+import { AMBAR, AZUL_CLARO, COR_CURSOR, COR_EIXO, COR_GRADE, VERMELHO } from "./cores";
 import TooltipGrafico from "./TooltipGrafico";
 
 type Modo = "valor" | "quantidade";
@@ -79,16 +79,16 @@ function GraficoSaudeFinanceira({ resumo, carregando, erro, className, aoLimparF
     >
       <ResponsiveContainer width="100%" height={320}>
         <BarChart data={resumo.serie} margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5dfd2" vertical={false} />
-          <XAxis dataKey="rotulo" tick={{ fontSize: 12, fill: "#6b6558" }} tickLine={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={COR_GRADE} vertical={false} />
+          <XAxis dataKey="rotulo" tick={{ fontSize: 12, fill: COR_EIXO }} tickLine={false} />
           <YAxis
             allowDecimals={false}
-            tick={{ fontSize: 12, fill: "#6b6558" }}
+            tick={{ fontSize: 12, fill: COR_EIXO }}
             tickFormatter={(v: number) => (porValor ? formatarMoedaCompacta(v) : String(v))}
             width={porValor ? 72 : 40}
           />
           <Tooltip
-            cursor={{ fill: "rgba(22, 35, 63, 0.06)" }}
+            cursor={{ fill: COR_CURSOR }}
             content={
               <TooltipGrafico
                 formatarValor={(v) => (porValor ? formatarMoeda(v) : `${v} boleto(s)`)}

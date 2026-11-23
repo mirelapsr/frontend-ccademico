@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
-import logoBrasao from "../../assets/logo-brasao.jpg";
+import logoCompleto from "../../assets/brand/logo-tomo-completo-escuro.svg";
+import logoIcone from "../../assets/brand/logo-tomo-icone.svg";
 import iconeStats from "../../assets/icones-menu/stats.png";
 import iconeSchool from "../../assets/icones-menu/school.png";
 import iconeCalendarClock from "../../assets/icones-menu/calendar-clock.png";
@@ -52,14 +53,14 @@ function Sidebar({ aberta }: SidebarProps) {
   return (
     <aside className={aberta ? "sidebar" : "sidebar sidebar--colapsada"}>
       <div className="sidebar__marca">
-        {aberta ? (
-          <div className="sidebar__marca-texto">
-            <span className="sidebar__marca-eyebrow">Controle Acadêmico</span>
-            <h1 className="sidebar__marca-titulo">Portal Escolar</h1>
-          </div>
-        ) : (
-          <img src={logoBrasao} alt="Portal Escolar" className="sidebar__marca-brasao" />
-        )}
+        {/* Logo direto sobre o Ink (sem placa clara); variante com tipografia em Paper. */}
+        <div className={aberta ? "sidebar__logo-placa" : "sidebar__logo-placa sidebar__logo-placa--icone"}>
+          {aberta ? (
+            <img src={logoCompleto} alt="Tomo Acadêmico" className="sidebar__logo-completo" />
+          ) : (
+            <img src={logoIcone} alt="Tomo Acadêmico" className="sidebar__logo-icone" />
+          )}
+        </div>
       </div>
 
       <nav className="sidebar__menu" aria-label="Navegação principal">

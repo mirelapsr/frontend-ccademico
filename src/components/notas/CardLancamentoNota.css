@@ -78,9 +78,9 @@
   font-size: 0.95rem;
   color: var(--texto);
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--tomo-ink);
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: var(--tomo-paper);
 }
 
 .card-lancamento-nota__campo-nota input {
@@ -101,7 +101,7 @@
 
 .card-lancamento-nota__input-nota--invalida {
   border-color: var(--perigo) !important;
-  background-color: #fef2f2 !important;
+  background-color: rgba(168, 37, 43, 0.08) !important;
   outline-color: var(--perigo) !important;
 }
 

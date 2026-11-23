@@ -132,7 +132,7 @@ function PaginaAvaliacoes() {
 
   if (carregando && avaliacoes.length === 0) {
     return (
-      <div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+      <div style={{ padding: "2rem", textAlign: "center", color: "var(--texto-suave)" }}>
         <p>Carregando avaliações...</p>
       </div>
     );
@@ -145,8 +145,8 @@ function PaginaAvaliacoes() {
           style={{
             margin: "0 0 16px",
             padding: "10px 12px",
-            background: "#fbeae9",
-            color: "#a4302b",
+            background: "rgba(168, 37, 43, 0.08)",
+            color: "var(--tomo-press)",
             borderRadius: "4px",
           }}
         >

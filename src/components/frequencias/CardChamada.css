@@ -63,21 +63,21 @@
 
 /* Regra de UI obrigatória: cores suaves por status, só quando ativo */
 .card-chamada__opcao--presente.card-chamada__opcao--ativa {
-  background: #e3f3e8;
-  border-color: #e3f3e8;
-  color: #1e6b3c;
+  background: var(--tomo-marine);
+  border-color: var(--tomo-marine);
+  color: #ffffff;
 }
 
 .card-chamada__opcao--ausente.card-chamada__opcao--ativa {
-  background: #fee2e2;
-  border-color: #fee2e2;
-  color: #991b1b;
+  background: var(--tomo-press);
+  border-color: var(--tomo-press);
+  color: #ffffff;
 }
 
 .card-chamada__opcao--justificado.card-chamada__opcao--ativa {
-  background: #fef9c3;
-  border-color: #fef9c3;
-  color: #854d0e;
+  background: var(--tomo-ochre);
+  border-color: var(--tomo-ochre);
+  color: #ffffff;
 }
 
 .card-chamada__justificativa {
@@ -100,9 +100,9 @@
   font-size: 0.9rem;
   color: var(--texto);
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--tomo-ink);
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: var(--tomo-paper);
 }
 
 .card-chamada__justificativa input:focus-visible {

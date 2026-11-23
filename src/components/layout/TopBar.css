@@ -5,14 +5,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: var(--superficie);
-  border-bottom: 1px solid var(--borda);
+  background: var(--tomo-paper);
+  border-bottom: 1px solid var(--tomo-ink);
 }
 
 .topbar__botao-menu {
   background: transparent;
-  color: var(--marinho);
-  border: 1px solid var(--borda);
+  color: var(--tomo-ink);
+  border: 1px solid var(--tomo-ink);
   border-radius: 8px;
   width: 38px;
   height: 38px;
@@ -25,7 +25,15 @@
 }
 
 .topbar__botao-menu:hover {
-  background: var(--fundo);
+  background: rgba(25, 23, 19, 0.06); /* Ink atenuado */
+  border-color: var(--tomo-marine);
+}
+
+.topbar__botao-menu:focus-visible,
+.topbar__botao-perfil:focus-visible,
+.topbar__dropdown-item:focus-visible {
+  outline: 2px solid var(--tomo-marine);
+  outline-offset: 2px;
 }
 
 .topbar__acoes {
@@ -50,15 +58,15 @@
 }
 
 .topbar__botao-perfil:hover {
-  background: var(--fundo);
+  background: rgba(25, 23, 19, 0.06); /* Ink atenuado */
 }
 
 .topbar__avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--marinho);
-  color: #f4efe6;
+  background: var(--tomo-marine);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,12 +80,12 @@
   font-family: var(--fonte-corpo);
   font-size: 0.92rem;
   font-weight: 600;
-  color: var(--texto);
+  color: var(--tomo-ink);
   white-space: nowrap;
 }
 
 .topbar__seta {
-  color: var(--texto-suave);
+  color: var(--tomo-ink);
   font-size: 0.7rem;
 }
 
@@ -86,10 +94,10 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 190px;
-  background: var(--superficie);
-  border: 1px solid var(--borda);
+  background: var(--tomo-paper);
+  border: 1px solid var(--tomo-ink);
   border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(32, 28, 22, 0.18);
+  box-shadow: 0 12px 30px rgba(25, 23, 19, 0.18);
   padding: 6px;
   display: flex;
   flex-direction: column;
@@ -100,7 +108,7 @@
 
 .topbar__dropdown-item {
   background: transparent;
-  color: var(--texto);
+  color: var(--tomo-ink);
   border: none;
   border-radius: 6px;
   padding: 10px 12px;
@@ -110,15 +118,15 @@
 }
 
 .topbar__dropdown-item:hover {
-  background: var(--fundo);
+  background: rgba(25, 23, 19, 0.06); /* Ink atenuado */
 }
 
 .topbar__dropdown-item--sair {
-  color: var(--perigo);
+  color: var(--tomo-press);
 }
 
 .topbar__dropdown-item--sair:hover {
-  background: #fbeae9;
+  background: rgba(168, 37, 43, 0.08); /* Press atenuado */
 }
 
 @keyframes topbar-dropdown-entrar {

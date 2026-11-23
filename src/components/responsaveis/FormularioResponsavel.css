@@ -70,7 +70,7 @@
   border-radius: 6px;
   color: var(--perigo-escuro);
   font-size: 0.85rem;
-  background: #fbeae9;
+  background: rgba(168, 37, 43, 0.08);
   line-height: 1.4;
 }
 

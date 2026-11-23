@@ -14,14 +14,14 @@ import { formatarMedia, situacaoPelaMedia, type NivelSituacao } from "../../util
 import type { PontoDesempenho } from "../../utils/dashboard";
 import { ANIMACAO_GRAFICO } from "./animacao";
 import CardGrafico from "./CardGrafico";
-import { AMBAR, AZUL_CLARO, VERMELHO } from "./cores";
+import { AMBAR, AZUL_CLARO, COR_CURSOR, COR_EIXO, COR_GRADE, INK, NEWSPRINT, VERMELHO } from "./cores";
 import TooltipGrafico from "./TooltipGrafico";
 
 const COR_POR_NIVEL: Record<NivelSituacao, string> = {
   aprovado: AZUL_CLARO,
   recuperacao: AMBAR,
   reprovado: VERMELHO,
-  "sem-notas": "#a39d8f",
+  "sem-notas": NEWSPRINT,
 };
 
 interface Props {
@@ -60,18 +60,18 @@ function GraficoDesempenhoMaterias({ dados, carregando, erro, className, aoLimpa
           margin={{ top: 4, right: 36, left: 0, bottom: 4 }}
           barCategoryGap="22%"
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5dfd2" horizontal={false} />
-          <XAxis type="number" domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 12, fill: "#6b6558" }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={COR_GRADE} horizontal={false} />
+          <XAxis type="number" domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 12, fill: COR_EIXO }} />
           <YAxis
             type="category"
             dataKey="materia"
             width={112}
-            tick={{ fontSize: 12, fill: "#201c16" }}
+            tick={{ fontSize: 12, fill: COR_EIXO }}
             tickLine={false}
           />
-          <ReferenceLine x={7} stroke="#16233f" strokeDasharray="4 4" />
+          <ReferenceLine x={7} stroke={INK} strokeDasharray="4 4" />
           <Tooltip
-            cursor={{ fill: "rgba(22, 35, 63, 0.06)" }}
+            cursor={{ fill: COR_CURSOR }}
             content={
               <TooltipGrafico
                 formatarValor={(valor) => formatarMedia(valor)}
@@ -90,7 +90,7 @@ function GraficoDesempenhoMaterias({ dados, carregando, erro, className, aoLimpa
               dataKey="media"
               position="right"
               formatter={(v: unknown) => formatarMedia(Number(v))}
-              style={{ fontSize: 12, fill: "#201c16", fontWeight: 600 }}
+              style={{ fontSize: 12, fill: INK, fontWeight: 600 }}
             />
           </Bar>
         </BarChart>

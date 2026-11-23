@@ -11,7 +11,7 @@ import {
 import type { PontoSerie } from "../../utils/dashboard";
 import { ANIMACAO_GRAFICO } from "./animacao";
 import CardGrafico from "./CardGrafico";
-import { AZUL_CLARO } from "./cores";
+import { COR_CURSOR, COR_EIXO, COR_GRADE, INK, MARINE } from "./cores";
 import TooltipGrafico from "./TooltipGrafico";
 
 interface Props {
@@ -41,26 +41,26 @@ function GraficoAlunosPorSerie({ dados, carregando, erro, className, aoLimparFil
         <BarChart data={[...dados]} margin={{ top: 20, right: 12, left: 0, bottom: muitasSeries ? 28 : 4 }}>
           <defs>
             <linearGradient id="gradiente-series" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={AZUL_CLARO} />
-              <stop offset="100%" stopColor="#16233f" />
+              <stop offset="0%" stopColor={MARINE} />
+              <stop offset="100%" stopColor={INK} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5dfd2" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={COR_GRADE} vertical={false} />
           <XAxis
             dataKey="serie"
             interval={0}
-            tick={{ fontSize: 12, fill: "#6b6558" }}
+            tick={{ fontSize: 12, fill: COR_EIXO }}
             tickLine={false}
             angle={muitasSeries ? -25 : 0}
             textAnchor={muitasSeries ? "end" : "middle"}
           />
-          <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#6b6558" }} width={36} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: COR_EIXO }} width={36} />
           <Tooltip
-            cursor={{ fill: "rgba(22, 35, 63, 0.06)" }}
+            cursor={{ fill: COR_CURSOR }}
             content={<TooltipGrafico formatarValor={(v) => `${v} aluno(s)`} />}
           />
           <Bar dataKey="alunos" name="Alunos" fill="url(#gradiente-series)" radius={[6, 6, 0, 0]} {...ANIMACAO_GRAFICO}>
-            <LabelList dataKey="alunos" position="top" style={{ fontSize: 12, fontWeight: 600, fill: "#16233f" }} />
+            <LabelList dataKey="alunos" position="top" style={{ fontSize: 12, fontWeight: 600, fill: INK }} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

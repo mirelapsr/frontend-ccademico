@@ -16,6 +16,57 @@
   padding: 32px;
 }
 
+/* --- Paleta-fonte do Tomo Acadêmico na área de conteúdo -----------------
+   Todas as páginas de gestão (e o Dashboard, que refina estes valores no
+   próprio escopo) herdam os tokens legados remapeados para a paleta. A tela de
+   login fica fora deste escopo e mantém o tema global do :root. */
+.layout-principal__conteudo {
+  --superficie: var(--tomo-paper);
+  --texto: var(--tomo-ink);
+  --texto-suave: rgba(25, 23, 19, 0.72); /* Ink atenuado */
+  --borda: var(--tomo-ink);
+  --marinho: var(--tomo-marine);
+  --marinho-escuro: var(--tomo-ink);
+  --azul-acao: var(--tomo-marine);
+  --azul-acao-escuro: var(--tomo-ink); /* hover do botão "+ Novo" */
+  --vinho: var(--tomo-press);
+  --vinho-escuro: var(--tomo-ink);
+  --perigo: var(--tomo-press);
+  --perigo-escuro: var(--tomo-ink); /* hover do botão excluir */
+  --vazio: rgba(25, 23, 19, 0.5);
+  /* Dentro do conteúdo, --fundo só é usado como preenchimento sutil (hover,
+     pílulas neutras, cabeçalho de tabela): tom de Ink translúcido sobre Paper. */
+  --fundo: rgba(25, 23, 19, 0.06);
+
+  background: var(--tomo-paper);
+  color: var(--tomo-ink);
+}
+
+/* Títulos em Ink (sobrepõe o h1–h3 global em Marine; classes de componente
+   continuam podendo definir a própria cor). */
+.layout-principal__conteudo :where(h1, h2, h3, h4) {
+  color: var(--tomo-ink);
+}
+
+/* Campos sem estilo próprio: Paper com borda Ink. */
+.layout-principal__conteudo :where(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+  background-color: var(--tomo-paper);
+  border-color: var(--tomo-ink);
+}
+
+/* Foco por teclado unificado: Marine, 2px de afastamento. */
+.layout-principal__conteudo :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--tomo-marine);
+  outline-offset: 2px;
+}
+
+/* Desabilitado: só opacidade, sem cores fora da paleta (componentes com regra
+   própria de :disabled mantêm a sua). */
+.layout-principal__conteudo :where(button, input, select, textarea):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .layout-principal__conteudo-interno {
   max-width: 1080px;
   margin: 0 auto;

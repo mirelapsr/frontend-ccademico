@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import logoBrasao from "../assets/logo-brasao.jpg"; 
+import logoCompleto from "../assets/brand/logo-tomo-completo-escuro.svg";
 import "./PaginaLogin.css";
 
 function PaginaLogin() {
@@ -39,10 +39,13 @@ function PaginaLogin() {
   return (
     <div className="pagina-login">
       <section className="pagina-login__marca">
-        <img src={logoBrasao} alt="" className="pagina-login__marca-dagua" aria-hidden="true" />
+        <span className="pagina-login__marca-dagua" aria-hidden="true" />
         <div className="pagina-login__marca-conteudo">
-          <h1>Controle Acadêmico</h1>
-          <p>Portal Escolar</p>
+          {/* Variante "escuro" do logo: símbolo na paleta e assinatura em Paper, direto sobre Ink. */}
+          <h1 className="pagina-login__logo-titulo">
+            <img src={logoCompleto} alt="Tomo Acadêmico" className="pagina-login__logo" />
+          </h1>
+          <p>Portal de Gestão Escolar</p>
         </div>
       </section>
 
@@ -116,7 +119,7 @@ function PaginaLogin() {
           )}
         </div>
 
-        <p className="pagina-login__rodape">2026 Controle Acadêmico. Todos os direitos reservados.</p>
+        <p className="pagina-login__rodape">2026 Tomo Acadêmico. Todos os direitos reservados.</p>
       </section>
     </div>
   );

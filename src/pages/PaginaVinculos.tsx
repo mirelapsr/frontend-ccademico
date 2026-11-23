@@ -142,7 +142,7 @@ function PaginaVinculos() {
 
   if (carregando && vinculos.length === 0) {
     return (
-      <div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+      <div style={{ padding: "2rem", textAlign: "center", color: "var(--texto-suave)" }}>
         <p>Carregando vínculos...</p>
       </div>
     );

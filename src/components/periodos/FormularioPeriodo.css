@@ -43,9 +43,9 @@
   font-size: 0.95rem;
   color: var(--texto);
   padding: 9px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--tomo-ink);
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: var(--tomo-paper);
   cursor: text;
 }
 
@@ -67,7 +67,7 @@
   border-radius: 2px;
   color: var(--perigo);
   font-size: 0.85rem;
-  background: #fbeae9;
+  background: rgba(168, 37, 43, 0.08);
 }
 
 .formulario-periodo__acoes {

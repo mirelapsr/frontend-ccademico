@@ -44,7 +44,7 @@
   padding: 9px 12px;
   border: 1px solid var(--borda);
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: var(--tomo-paper);
 }
 
 .formulario-aluno__campo input:focus-visible {
@@ -60,7 +60,7 @@
   border-radius: 2px;
   color: var(--perigo);
   font-size: 0.85rem;
-  background: #fbeae9;
+  background: rgba(168, 37, 43, 0.08);
 }
 
 .formulario-aluno__acoes {

@@ -63,7 +63,7 @@ export default function FormularioVinculo({ alunos, responsaveis, salvar, cancel
   }
 
   return (
-    <section style={{ background: '#fff', padding: '24px', borderRadius: '8px', maxWidth: '500px', margin: '0 auto' }}>
+    <section style={{ background: 'var(--tomo-paper)', border: '1px solid var(--tomo-ink)', padding: '24px', borderRadius: '8px', maxWidth: '500px', margin: '0 auto' }}>
       <h2>Novo Vínculo</h2>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
         
@@ -88,12 +88,12 @@ export default function FormularioVinculo({ alunos, responsaveis, salvar, cancel
         />
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <span style={{ fontSize: '0.9rem', fontWeight: 500, color: '#334155' }}>Grau de Parentesco *</span>
+          <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--tomo-ink)' }}>Grau de Parentesco *</span>
           <select 
             value={tipo} 
             onChange={(e) => setTipo(e.target.value as TipoResponsavel)}
             disabled={enviando}
-            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--tomo-ink)' }}
           >
             <option value="Mae">Mãe</option>
             <option value="Pai">Pai</option>
@@ -113,21 +113,21 @@ export default function FormularioVinculo({ alunos, responsaveis, salvar, cancel
           <strong>Responsável Financeiro?</strong>
         </label>
 
-        {erro && <p style={{ color: 'red', fontSize: '0.85rem' }}>{erro}</p>}
+        {erro && <p style={{ color: 'var(--tomo-press)', fontSize: '0.85rem' }}>{erro}</p>}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
           <button 
             type="button" 
             onClick={cancelar} 
             disabled={enviando}
-            style={{ background: 'transparent', color: '#666', border: '1px solid #ccc', padding: '8px 16px', borderRadius: '6px' }}
+            style={{ background: 'transparent', color: 'var(--tomo-ink)', border: '1px solid var(--tomo-ink)', padding: '8px 16px', borderRadius: '6px' }}
           >
             Cancelar
           </button>
           <button 
             type="submit" 
             disabled={enviando}
-            style={{ background: '#1e3a8a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
+            style={{ background: 'var(--tomo-marine)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
           >
             {enviando ? "Vinculando..." : "Vincular"}
           </button>

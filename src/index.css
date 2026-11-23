@@ -41,6 +41,15 @@ body {
   --fonte-titulo: "Merriweather", Georgia, serif;
   --fonte-corpo: "Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --fonte-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Paleta-fonte oficial do Tomo Acadêmico (aplicada por enquanto apenas no
+     Dashboard e no layout que o envolve: Sidebar, TopBar, LayoutPrincipal). */
+  --tomo-ink: #191713;
+  --tomo-paper: #f7f2e7;
+  --tomo-press: #a8252b;
+  --tomo-marine: #22406e;
+  --tomo-ochre: #8f6412;
+  --tomo-newsprint: #c6c8bf;
 }
 
 h1,

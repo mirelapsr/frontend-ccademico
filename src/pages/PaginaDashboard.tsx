@@ -13,7 +13,15 @@ import {
   YAxis,
 } from "recharts";
 import { ANIMACAO_GRAFICO } from "../components/dashboard/animacao";
-import { AZUL_CLARO } from "../components/dashboard/cores";
+import {
+  COR_CURSOR,
+  COR_EIXO,
+  COR_GRADE,
+  MARINE,
+  NEWSPRINT,
+  OCHRE,
+  PRESS,
+} from "../components/dashboard/cores";
 import CardGrafico from "../components/dashboard/CardGrafico";
 import FiltrosDashboard from "../components/dashboard/FiltrosDashboard";
 import GraficoAlunosPorSerie from "../components/dashboard/GraficoAlunosPorSerie";
@@ -52,12 +60,12 @@ import {
 import "../components/dashboard/dashboard.css";
 import "./PaginaDashboard.css";
 
-// Paleta institucional (marinho + variações) para o gráfico de pizza.
+// Paleta-fonte do Tomo Acadêmico para o gráfico de pizza.
 const CORES_TURNO: Record<Turno, string> = {
-  Manha: "#1e3a8a",
-  Tarde: AZUL_CLARO,
-  Integral: "#16233f",
-  Noite: "#6e1423",
+  Manha: MARINE,
+  Tarde: OCHRE,
+  Integral: NEWSPRINT,
+  Noite: PRESS,
 };
 
 function formatarDataHoje(): string {
@@ -205,23 +213,23 @@ function PaginaDashboard() {
         >
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={dadosOcupacao} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5dfd2" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={COR_GRADE} vertical={false} />
               <XAxis
                 dataKey="nome"
-                tick={{ fontSize: 12, fill: "#6b6558" }}
+                tick={{ fontSize: 12, fill: COR_EIXO }}
                 interval={0}
                 angle={-15}
                 textAnchor="end"
                 height={56}
               />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#6b6558" }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: COR_EIXO }} />
               <Tooltip
-                cursor={{ fill: "rgba(22, 35, 63, 0.06)" }}
+                cursor={{ fill: COR_CURSOR }}
                 content={<TooltipGrafico formatarValor={(v) => `${v} aluno(s)`} />}
               />
               <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="capacidade" name="Capacidade" fill="#b9b2a2" radius={[6, 6, 0, 0]} {...ANIMACAO_GRAFICO} />
-              <Bar dataKey="ocupacao" name="Ocupação Real" fill="#1e3a8a" radius={[6, 6, 0, 0]} {...ANIMACAO_GRAFICO} />
+              <Bar dataKey="capacidade" name="Capacidade" fill={NEWSPRINT} radius={[6, 6, 0, 0]} {...ANIMACAO_GRAFICO} />
+              <Bar dataKey="ocupacao" name="Ocupação Real" fill={MARINE} radius={[6, 6, 0, 0]} {...ANIMACAO_GRAFICO} />
             </BarChart>
           </ResponsiveContainer>
         </CardGrafico>

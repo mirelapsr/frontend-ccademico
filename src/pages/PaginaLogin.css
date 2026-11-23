@@ -1,7 +1,12 @@
 /* Caminho: src/pages/PaginaLogin.css */
+/* Paleta editorial do Tomo Acadêmico (tokens --tomo-* em src/index.css):
+   Ink #191713 · Paper #F7F2E7 · Press #A8252B · Marine #22406E
+   Ochre #8F6412 · Newsprint #C6C8BF (+ #fff para contraste). */
+
 .pagina-login {
   min-height: 100vh;
   display: flex;
+  background: var(--tomo-paper);
 }
 
 /* ---------- Painel esquerdo: marca ---------- */
@@ -13,20 +18,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, var(--azul-acao-escuro), var(--marinho-escuro));
+  background: var(--tomo-ink);
   overflow: hidden;
 }
 
+/* Selo ao fundo: silhueta do submark preenchida em Newsprint, bem discreta. */
 .pagina-login__marca-dagua {
   position: absolute;
   top: 50%;
   left: 50%;
   width: 640px;
-  height: auto;
+  aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%);
+  background-color: var(--tomo-newsprint);
   opacity: 0.06;
   pointer-events: none;
-  object-fit: contain;
+  -webkit-mask: url("../assets/brand/logo-tomo-submark.svg") center / contain no-repeat;
+  mask: url("../assets/brand/logo-tomo-submark.svg") center / contain no-repeat;
 }
 
 .pagina-login__marca-conteudo {
@@ -39,19 +47,28 @@
   z-index: 1;
 }
 
-.pagina-login__marca-conteudo h1 {
-  font-family: var(--fonte-titulo);
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 1.9rem;
+/* Logo integrado direto sobre Ink (variante escura: assinatura em Paper). */
+.pagina-login__logo-titulo {
+  width: min(380px, 100%);
   margin: 0;
-  letter-spacing: 0.01em;
+}
+
+.pagina-login__logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 640 / 220;
 }
 
 .pagina-login__marca-conteudo p {
-  margin: 8px 0 0;
-  color: #cbd5e1;
-  font-size: 1.05rem;
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--tomo-newsprint);
+  color: var(--tomo-paper);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 /* ---------- Painel direito: formulário ---------- */
@@ -64,26 +81,30 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f6f4ee;
+  background: var(--tomo-paper);
   padding: 32px;
 }
 
 .pagina-login__cartao {
   width: 100%;
   max-width: 380px;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  background: var(--tomo-paper);
+  border: 1px solid var(--tomo-ink);
+  border-radius: 12px;
   padding: 40px 36px;
+  box-sizing: border-box;
 }
 
 .pagina-login__cartao h2 {
-  font-size: 1.5rem;
+  font-family: var(--fonte-titulo);
+  font-size: 1.6rem;
+  color: var(--tomo-ink);
 }
 
 .pagina-login__instrucao {
   margin: 8px 0 28px;
-  color: var(--texto-suave);
+  color: var(--tomo-ink);
+  opacity: 0.75;
   font-size: 0.92rem;
 }
 
@@ -97,7 +118,7 @@
 .pagina-login__campo > span:first-child {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--texto);
+  color: var(--tomo-ink);
 }
 
 .pagina-login__campo-caixa {
@@ -105,42 +126,56 @@
   align-items: center;
   gap: 10px;
   padding: 0 14px;
-  border: 1px solid var(--borda);
+  border: 1px solid var(--tomo-ink);
   border-radius: 8px;
-  background: var(--superficie);
-  color: var(--texto-suave);
+  background: #ffffff;
+  color: var(--tomo-ink);
 }
 
-.pagina-login__campo-caixa:focus-within {
-  outline: 2px solid var(--marinho);
+/* Foco do campo: o contorno Marine envolve a caixa inteira (ícone + input). */
+.pagina-login__campo-caixa:has(input:focus-visible) {
+  outline: 2px solid var(--tomo-marine);
   outline-offset: 1px;
-  border-color: var(--marinho);
+  border-color: var(--tomo-marine);
 }
 
 .pagina-login__campo-caixa input {
   flex: 1;
+  min-width: 0;
   border: none;
+  border-radius: 0;
   background: transparent;
   padding: 12px 0;
   font-family: var(--fonte-corpo);
   font-size: 0.95rem;
-  color: var(--texto);
+  color: var(--tomo-ink);
 }
 
-.pagina-login__campo-caixa input:focus {
+.pagina-login__campo-caixa input:focus,
+.pagina-login__campo-caixa input:focus-visible {
   outline: none;
 }
 
 .pagina-login__campo-caixa input::placeholder {
-  color: var(--vazio);
+  color: var(--tomo-ink);
+  opacity: 0.45;
+}
+
+.pagina-login__campo-caixa input[aria-invalid="true"] {
+  border: none;
+}
+
+.pagina-login__campo-caixa:has(input[aria-invalid="true"]) {
+  border-color: var(--tomo-press);
 }
 
 .pagina-login__erro {
   margin: -6px 0 18px;
   padding: 10px 12px;
+  border: 1px solid var(--tomo-press);
   border-radius: 8px;
-  background: #fbe4e3;
-  color: var(--perigo-escuro);
+  background: #ffffff;
+  color: var(--tomo-press);
   font-size: 0.86rem;
 }
 
@@ -148,29 +183,57 @@
   width: 100%;
   padding: 12px 18px;
   font-size: 1rem;
+  background: var(--tomo-marine);
+  border: 1px solid var(--tomo-marine);
+  color: var(--tomo-paper);
+}
+
+.pagina-login__cartao form button[type="submit"]:hover:not(:disabled) {
+  background: var(--tomo-ink);
+  border-color: var(--tomo-ink);
+  color: var(--tomo-paper);
+}
+
+.pagina-login__cartao form button[type="submit"]:focus-visible {
+  outline: 2px solid var(--tomo-marine);
+  outline-offset: 2px;
+}
+
+.pagina-login__cartao form button[type="submit"]:disabled {
+  cursor: progress;
+  opacity: 0.7;
 }
 
 .pagina-login__link-secundario {
   display: block;
   margin: 18px auto 0;
   background: none;
-  color: var(--azul-acao);
+  border: none;
+  color: var(--tomo-marine);
   font-weight: 600;
   font-size: 0.88rem;
   padding: 4px 8px;
+  text-underline-offset: 3px;
 }
 
 .pagina-login__link-secundario:hover {
   background: none;
-  color: var(--azul-acao-escuro);
+  color: var(--tomo-marine);
   text-decoration: underline;
+}
+
+.pagina-login__link-secundario:focus-visible {
+  outline: 2px solid var(--tomo-marine);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .pagina-login__ajuda-senha {
   margin: 10px 0 0;
   text-align: center;
   font-size: 0.82rem;
-  color: var(--texto-suave);
+  color: var(--tomo-ink);
+  opacity: 0.75;
 }
 
 .pagina-login__rodape {
@@ -179,7 +242,7 @@
   bottom: 16px;
   margin: 0;
   font-size: 0.75rem;
-  color: var(--texto-suave);
+  color: var(--tomo-ink);
 }
 
 @media (max-width: 768px) {
@@ -203,19 +266,24 @@
     gap: 14px;
   }
 
-  .pagina-login__marca-conteudo h1 {
-    font-size: 1.2rem;
+  .pagina-login__logo-titulo {
+    width: 160px;
   }
 
   .pagina-login__marca-conteudo p {
-    margin: 2px 0 0;
-    font-size: 0.85rem;
+    margin: 0;
+    padding: 0 0 0 14px;
+    border-top: none;
+    border-left: 1px solid var(--tomo-newsprint);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-align: left;
   }
 
   .pagina-login__area-formulario {
     min-height: 0;
     flex: 1 1 auto;
-    padding: 28px 20px 56px;
+    padding: 28px 16px 56px;
   }
 
   .pagina-login__cartao {

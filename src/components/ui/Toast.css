@@ -11,12 +11,12 @@
   font-size: 0.9rem;
   font-weight: 600;
   color: #ffffff;
-  box-shadow: 0 6px 20px rgba(32, 28, 22, 0.18);
+  box-shadow: 0 6px 20px rgba(25, 23, 19, 0.18);
   animation: toast-entrar 0.2s ease-out;
 }
 
 .toast--sucesso {
-  background: #2f7d4f;
+  background: var(--tomo-marine);
 }
 
 .toast--erro {

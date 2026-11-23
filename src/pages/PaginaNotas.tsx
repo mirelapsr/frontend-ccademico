@@ -324,8 +324,8 @@ function PaginaNotas() {
           style={{
             margin: "0 0 16px",
             padding: "10px 12px",
-            background: "#fbeae9",
-            color: "#a4302b",
+            background: "rgba(168, 37, 43, 0.08)",
+            color: "var(--tomo-press)",
             borderRadius: "4px",
           }}
         >

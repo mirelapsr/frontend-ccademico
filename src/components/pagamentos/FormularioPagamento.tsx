@@ -61,7 +61,7 @@ function FormularioPagamento({ alunos, salvar, cancelar }: FormularioPagamentoPr
   }
 
   return (
-    <section style={{ background: "#fff", padding: "24px", borderRadius: "8px", maxWidth: "600px", margin: "0 auto" }}>
+    <section style={{ background: "var(--tomo-paper)", border: "1px solid var(--tomo-ink)", padding: "24px", borderRadius: "8px", maxWidth: "600px", margin: "0 auto" }}>
       <h2>Novo Pagamento / Boleto</h2>
       <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "20px" }}>
         <label style={{ display: "flex", flexDirection: "column", gap: "6px", gridColumn: "1 / -1" }}>
@@ -138,10 +138,10 @@ function FormularioPagamento({ alunos, salvar, cancelar }: FormularioPagamentoPr
           />
         </label>
 
-        {erro && <p style={{ color: "red", gridColumn: "1 / -1" }}>{erro}</p>}
+        {erro && <p style={{ color: "var(--tomo-press)", gridColumn: "1 / -1" }}>{erro}</p>}
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", gridColumn: "1 / -1", marginTop: "16px" }}>
-          <button type="button" onClick={cancelar} disabled={enviando} style={{ background: "transparent", color: "#666", border: "1px solid #ccc" }}>
+          <button type="button" onClick={cancelar} disabled={enviando} style={{ background: "transparent", color: "var(--tomo-ink)", border: "1px solid var(--tomo-ink)" }}>
             Cancelar
           </button>
           <button type="submit" disabled={enviando}>

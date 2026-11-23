@@ -231,7 +231,7 @@ function PaginaFrequencias() {
   return (
     <>
       {erroFrequencias && (
-        <div style={{ margin: "0 0 16px", padding: "10px 12px", background: "#fbeae9", color: "#a4302b", borderRadius: "4px" }}>
+        <div style={{ margin: "0 0 16px", padding: "10px 12px", background: "rgba(168, 37, 43, 0.08)", color: "var(--tomo-press)", borderRadius: "4px" }}>
           {erroFrequencias}
         </div>
       )}

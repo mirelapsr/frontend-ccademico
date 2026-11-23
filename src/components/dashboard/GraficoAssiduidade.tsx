@@ -11,13 +11,14 @@ import {
 } from "recharts";
 import type { PontoAssiduidade, ResumoAssiduidade } from "../../utils/dashboard";
 import { ANIMACAO_GRAFICO } from "./animacao";
+import { COR_CURSOR, COR_EIXO, COR_GRADE, INK, MARINE, NEWSPRINT, PRESS } from "./cores";
 import CardGrafico from "./CardGrafico";
 import TooltipGrafico from "./TooltipGrafico";
 
-// Paleta institucional: marinho (presença), neutro (justificada), vinho (falta).
-const COR_PRESENCA = "#1e3a8a";
-const COR_JUSTIFICADA = "#b9b2a2";
-const COR_FALTA = "#6e1423";
+// Paleta-fonte: Marine (presença), Newsprint (justificada), Press (falta).
+const COR_PRESENCA = MARINE;
+const COR_JUSTIFICADA = NEWSPRINT;
+const COR_FALTA = PRESS;
 
 function formatarPercentual(valor: number): string {
   return `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
@@ -61,23 +62,23 @@ function GraficoAssiduidade({ resumo, carregando, erro, className, aoLimparFiltr
           margin={{ top: 4, right: 56, left: 0, bottom: 4 }}
           barCategoryGap="22%"
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5dfd2" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={COR_GRADE} horizontal={false} />
           <XAxis
             type="number"
             domain={[0, 1]}
             ticks={[0, 0.25, 0.5, 0.75, 1]}
             tickFormatter={(v: number) => formatarPercentual(v * 100)}
-            tick={{ fontSize: 12, fill: "#6b6558" }}
+            tick={{ fontSize: 12, fill: COR_EIXO }}
           />
           <YAxis
             type="category"
             dataKey="turma"
             width={larguraEixo}
-            tick={{ fontSize: 12, fill: "#201c16" }}
+            tick={{ fontSize: 12, fill: COR_EIXO }}
             tickLine={false}
           />
           <Tooltip
-            cursor={{ fill: "rgba(22, 35, 63, 0.06)" }}
+            cursor={{ fill: COR_CURSOR }}
             content={
               <TooltipGrafico
                 formatarValor={(valor) => `${valor} registro(s)`}
@@ -108,7 +109,7 @@ function GraficoAssiduidade({ resumo, carregando, erro, className, aoLimparFiltr
               dataKey="taxaAssiduidade"
               position="right"
               formatter={(v: unknown) => formatarPercentual(Number(v))}
-              style={{ fontSize: 12, fill: "#201c16", fontWeight: 600 }}
+              style={{ fontSize: 12, fill: INK, fontWeight: 600 }}
             />
           </Bar>
         </BarChart>

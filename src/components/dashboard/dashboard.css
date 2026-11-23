@@ -7,11 +7,9 @@
   flex-wrap: nowrap; /* desktop: tudo na mesma linha; quebra só no container estreito */
   align-items: flex-end;
   gap: 16px 20px;
-  background: #ffffff;
+  background: var(--tomo-paper);
+  border: 1px solid var(--tomo-ink);
   border-radius: 12px;
-  box-shadow:
-    0 1px 2px rgba(32, 28, 22, 0.06),
-    0 2px 8px rgba(32, 28, 22, 0.07);
   padding: 16px 20px;
 }
 
@@ -77,20 +75,32 @@
 }
 
 .chip-turno:hover:not(:disabled) {
-  border-color: var(--azul-acao);
+  background: var(--tomo-paper);
+  border-color: var(--tomo-marine);
+  color: var(--tomo-ink);
 }
 
 .chip-turno--ativo,
 .chip-turno--ativo:hover:not(:disabled) {
-  background: var(--azul-acao);
-  border-color: var(--azul-acao);
+  background: var(--tomo-marine);
+  border-color: var(--tomo-marine);
   color: #ffffff;
 }
 
 .chip-turno:disabled,
 .filtros-dashboard select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Foco por teclado: Marine sobre as superfícies claras do Dashboard. */
+.chip-turno:focus-visible,
+.filtros-dashboard select:focus-visible,
+.filtros-dashboard__limpar:focus-visible,
+.alternador__botao:focus-visible,
+.estado-grafico__botao:focus-visible {
+  outline: 2px solid var(--tomo-marine);
+  outline-offset: 2px;
 }
 
 .filtros-dashboard__limpar {
@@ -99,9 +109,9 @@
   margin-left: auto;
   padding: 8px 16px;
   border-radius: 8px;
-  border: 1px solid var(--vinho);
+  border: 1px solid var(--tomo-press);
   background: transparent;
-  color: var(--vinho);
+  color: var(--tomo-press);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -109,12 +119,15 @@
 }
 
 .filtros-dashboard__limpar:hover:not(:disabled) {
-  background: var(--vinho);
+  background: var(--tomo-press);
   color: #ffffff;
 }
 
-.filtros-dashboard__limpar:disabled {
-  opacity: 0.4;
+.filtros-dashboard__limpar:disabled,
+.filtros-dashboard__limpar:disabled:hover {
+  background: transparent;
+  color: var(--tomo-press);
+  opacity: 0.45;
   cursor: default;
 }
 
@@ -193,8 +206,14 @@
   cursor: pointer;
 }
 
-.alternador__botao--ativo {
-  background: var(--marinho);
+.alternador__botao:hover {
+  background: rgba(34, 64, 110, 0.08); /* Marine atenuado */
+  color: var(--tomo-ink);
+}
+
+.alternador__botao--ativo,
+.alternador__botao--ativo:hover {
+  background: var(--tomo-marine);
   color: #ffffff;
 }
 
@@ -221,15 +240,15 @@
 .estado-grafico__icone {
   width: 56px;
   height: 56px;
-  fill: var(--borda);
+  fill: var(--tomo-newsprint);
 }
 
 .estado-grafico__botao {
   padding: 7px 16px;
   border-radius: 8px;
-  border: 1px solid var(--azul-acao);
+  border: 1px solid var(--tomo-marine);
   background: transparent;
-  color: var(--azul-acao);
+  color: var(--tomo-marine);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -237,7 +256,7 @@
 }
 
 .estado-grafico__botao:hover {
-  background: var(--azul-acao);
+  background: var(--tomo-marine);
   color: #ffffff;
 }
 
@@ -250,7 +269,7 @@
   max-width: 280px;
   height: 90px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #eee8db 25%, #f7f3ea 50%, #eee8db 75%);
+  background: linear-gradient(90deg, var(--tomo-newsprint) 25%, var(--tomo-paper) 50%, var(--tomo-newsprint) 75%);
   background-size: 200% 100%;
   animation: esqueleto 1.2s linear infinite;
 }
@@ -272,10 +291,10 @@
 .tooltip-grafico {
   min-width: 150px;
   padding: 10px 12px;
-  background: rgba(14, 23, 41, 0.96);
-  color: #ffffff;
+  background: var(--tomo-ink);
+  color: var(--tomo-paper);
   border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(14, 23, 41, 0.28);
+  box-shadow: 0 6px 18px rgba(25, 23, 19, 0.28);
   font-size: 0.8rem;
 }
 
@@ -321,6 +340,6 @@
 .tooltip-grafico__rodape {
   margin-top: 8px;
   padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  border-top: 1px solid rgba(247, 242, 231, 0.2);
   opacity: 0.9;
 }

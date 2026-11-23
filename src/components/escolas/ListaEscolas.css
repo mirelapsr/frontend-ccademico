@@ -128,7 +128,7 @@
   border-radius: 2px;
   color: var(--perigo);
   font-size: 0.85rem;
-  background: #fbeae9;
+  background: rgba(168, 37, 43, 0.08);
 }
 
 .lista-escolas__erro p {
