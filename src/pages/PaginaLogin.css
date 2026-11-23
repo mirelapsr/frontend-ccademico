@@ -48,16 +48,25 @@
 }
 
 /* Logo integrado direto sobre Ink (variante escura: assinatura em Paper). */
+/* O SVG (viewBox 640×220, compartilhado com a Sidebar) tem o desenho entre
+   x≈22 e x≈535: sobra espaço vazio à direita, o que desloca o centro óptico
+   para a esquerda. Aqui o h1 recorta a janela x=6..550 (544 unidades, 16 de
+   respiro de cada lado), de modo que a caixa coincide com o desenho e o
+   alinhamento flex centraliza a marca no mesmo eixo da linha e do subtítulo. */
 .pagina-login__logo-titulo {
-  width: min(380px, 100%);
+  width: min(323px, 100%); /* mesma escala de antes: 380px × 544/640 */
+  aspect-ratio: 544 / 220;
   margin: 0;
+  overflow: hidden;
 }
 
 .pagina-login__logo {
   display: block;
-  width: 100%;
+  width: calc(100% * 640 / 544);
+  max-width: none;
   height: auto;
   aspect-ratio: 640 / 220;
+  margin-left: calc(-100% * 6 / 544);
 }
 
 .pagina-login__marca-conteudo p {
@@ -267,7 +276,7 @@
   }
 
   .pagina-login__logo-titulo {
-    width: 160px;
+    width: 136px; /* 160px × 544/640: mesma escala com o recorte */
   }
 
   .pagina-login__marca-conteudo p {
